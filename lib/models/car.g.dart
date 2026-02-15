@@ -25,13 +25,17 @@ class CarAdapter extends TypeAdapter<Car> {
       bootSpace: fields[5] as int,
       safetyRating: fields[6] as int,
       horsepower: fields[7] as double,
+      usageType: fields[8] as String,
+      parkingSize: fields[9] as String,
+      imageUrl: fields[10] as String?,
+      variant: fields[11] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Car obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.brand)
       ..writeByte(1)
@@ -47,7 +51,15 @@ class CarAdapter extends TypeAdapter<Car> {
       ..writeByte(6)
       ..write(obj.safetyRating)
       ..writeByte(7)
-      ..write(obj.horsepower);
+      ..write(obj.horsepower)
+      ..writeByte(8)
+      ..write(obj.usageType)
+      ..writeByte(9)
+      ..write(obj.parkingSize)
+      ..writeByte(10)
+      ..write(obj.imageUrl)
+      ..writeByte(11)
+      ..write(obj.variant);
   }
 
   @override
