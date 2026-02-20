@@ -120,7 +120,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
               ),
               SelectableText(
                 '$publicId.jpg',
-                style: GoogleFonts.mono(fontSize: 12),
+                style: GoogleFonts.sourceCodePro(fontSize: 12),
               ),
               
               const SizedBox(height: 16),
@@ -180,7 +180,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                     const SizedBox(height: 4),
                     SelectableText(
                       entry.value,
-                      style: GoogleFonts.mono(fontSize: 10),
+                      style: GoogleFonts.sourceCodePro(fontSize: 10),
                     ),
                   ],
                 ),
