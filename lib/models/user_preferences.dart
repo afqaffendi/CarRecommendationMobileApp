@@ -28,4 +28,23 @@ class UserPreferences extends HiveObject {
     'fuelEconomy': fuelEconomyWeight,
     'safety': safetyWeight,
   };
+
+  // For export/import functionality
+  Map<String, dynamic> toMap() => {
+    'budget': budget,
+    'usageType': usageType,
+    'parkingSpace': parkingSpace,
+    'priceWeight': priceWeight,
+    'fuelEconomyWeight': fuelEconomyWeight,
+    'safetyWeight': safetyWeight,
+  };
+
+  factory UserPreferences.fromMap(Map<String, dynamic> map) => UserPreferences(
+    budget: map['budget']?.toDouble() ?? 100000,
+    usageType: map['usageType'] ?? 'both',
+    parkingSpace: map['parkingSpace'] ?? 'medium',
+    priceWeight: map['priceWeight']?.toDouble() ?? 0.5,
+    fuelEconomyWeight: map['fuelEconomyWeight']?.toDouble() ?? 0.5,
+    safetyWeight: map['safetyWeight']?.toDouble() ?? 0.5,
+  );
 }

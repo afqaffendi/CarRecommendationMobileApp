@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/database_service.dart';
 import '../services/lifestyle_parser_service.dart';
 import 'preference_sliders_screen.dart';
@@ -19,7 +20,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
 
   final List<String> _examplePrompts = [
     "nak kereta murah untuk kerja KL",
-    "family car, safety penting, balik kampung selalu",
+    "family car, safety penting, balik kampung selalu", 
     "first car fresh grad, jimat minyak",
     "SUV bawah 120k, parking rumah besar",
   ];
@@ -34,7 +35,12 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
     final input = _textController.text.trim();
     if (input.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please type something first')),
+        SnackBar(
+          content: Text(
+            'Please type something first',
+            style: GoogleFonts.inter(),
+          ),
+        ),
       );
       return;
     }
@@ -43,6 +49,9 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
       _isParsing = true;
       _parsedResult = null;
     });
+
+    // Save to search history
+    await DatabaseService.addSearchHistory(input);
 
     final result = await _parserService.parseLifestyleInput(input);
 
@@ -75,80 +84,143 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tell Us About You'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(
+          'Tell Us About You',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            const Text(
+            Text(
               'What car do you need?',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
-              'Just type naturally - in English, Malay, or mix! Our AI understands you.',
-              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 24),
-
-            // Text Input
-            TextField(
-              controller: _textController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Type anything! e.g. "nak kereta murah untuk kerja" or "family car with good safety"...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
+              'Just type naturally - in English, Malay, or mix!\nOur AI understands you.',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: Colors.black54,
+                height: 1.5,
               ),
-              onChanged: (_) {
-                if (_parsedResult != null) {
-                  setState(() => _parsedResult = null);
-                }
-              },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 32),
+
+            // Text Input Card
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.black.withOpacity(0.1)),
+              ),
+              child: TextField(
+                controller: _textController,
+                maxLines: 4,
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  height: 1.5,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Type anything! e.g. "nak kereta murah untuk kerja" or "family car with good safety"...',
+                  hintStyle: GoogleFonts.inter(
+                    color: Colors.black38,
+                    fontSize: 15,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.all(20),
+                ),
+                onChanged: (_) {
+                  if (_parsedResult != null) {
+                    setState(() => _parsedResult = null);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
 
             // Analyze Button
             SizedBox(
               width: double.infinity,
-              height: 50,
-              child: FilledButton.icon(
+              height: 56,
+              child: FilledButton(
                 onPressed: _isParsing ? null : _parseInput,
-                icon: _isParsing 
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _isParsing ? Colors.black38 : Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: _isParsing 
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Analyzing...',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
                       )
-                    : const Icon(Icons.auto_awesome),
-                label: Text(_isParsing ? 'Analyzing...' : 'Analyze My Needs'),
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.auto_awesome_rounded),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Analyze My Needs',
+                            style: GoogleFonts.inter(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ),
 
-            // Parsed Results - AI always gives a result
+            // Parsed Results
             if (_parsedResult != null) ...[
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               _buildParsedResultsCard(),
             ],
 
             // Example Prompts
-            const SizedBox(height: 32),
-            const Text(
+            const SizedBox(height: 40),
+            Text(
               'Or try an example:',
-              style: TextStyle(fontWeight: FontWeight.w600),
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             ..._examplePrompts.map((example) => _buildExampleChip(example)),
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -159,77 +231,136 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
     final result = _parsedResult!;
     
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.shade200),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green.shade700),
-              const SizedBox(width: 8),
-              const Expanded(
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
                 child: Text(
-                  'AI Analysis Complete',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  'Analysis Complete',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
                 ),
               ),
               _buildConfidenceBadge(result.confidence),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Text(
             result.summary,
-            style: TextStyle(color: Colors.grey.shade700, fontStyle: FontStyle.italic),
+            style: GoogleFonts.inter(
+              color: Colors.black54,
+              fontSize: 15,
+              height: 1.5,
+            ),
           ),
-          const Divider(height: 24),
           
-          // Extracted Values
-          _buildExtractedRow(Icons.attach_money, 'Budget', 'RM ${result.budget.toStringAsFixed(0)}'),
-          _buildExtractedRow(Icons.route, 'Usage', _formatUsageType(result.usageType)),
-          _buildExtractedRow(Icons.local_parking, 'Parking', _formatParkingSpace(result.parkingSpace)),
+          const SizedBox(height: 24),
+          // Extracted Values  
+          _buildInfoRow(
+            Icons.account_balance_wallet_rounded,
+            'Budget',
+            'RM ${result.budget.toStringAsFixed(0)}',
+          ),
+          _buildInfoRow(
+            Icons.route_rounded,
+            'Usage',
+            _formatUsageType(result.usageType),
+          ),
+          _buildInfoRow(
+            Icons.local_parking_rounded,
+            'Parking',
+            _formatParkingSpace(result.parkingSpace),
+          ),
           
-          const Divider(height: 24),
-          const Text('Detected Priorities:', style: TextStyle(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          _buildPriorityBar('Price', result.priceImportance, Colors.green),
-          _buildPriorityBar('Fuel Economy', result.fuelImportance, Colors.blue),
-          _buildPriorityBar('Safety', result.safetyImportance, Colors.orange),
+          const SizedBox(height: 24),
+          Text(
+            'Detected Priorities',
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildPriorityBar('Price', result.priceImportance),
+          _buildPriorityBar('Fuel Economy', result.fuelImportance),
+          _buildPriorityBar('Safety', result.safetyImportance),
           
           if (result.detectedNeeds.isNotEmpty) ...[
-            const Divider(height: 24),
-            const Text('What I Detected:', style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
+            const SizedBox(height: 24),
+            Text(
+              'What I Detected',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 12),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: result.detectedNeeds.map((need) => Chip(
-                label: Text(need, style: const TextStyle(fontSize: 12)),
-                backgroundColor: Colors.blue.shade50,
+              children: result.detectedNeeds.map((need) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.black.withOpacity(0.1)),
+                ),
+                child: Text(
+                  need,
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: Colors.black87,
+                  ),
+                ),
               )).toList(),
             ),
           ],
           
-          const SizedBox(height: 16),
+          const SizedBox(height: 32),
           SizedBox(
             width: double.infinity,
+            height: 52,
             child: FilledButton(
               onPressed: _proceedWithPreferences,
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text('Continue with these preferences'),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward),
-                ],
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Text(
+                'Continue with these preferences',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 15,
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: TextButton(
@@ -242,7 +373,13 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
                   ),
                 );
               },
-              child: const Text('Adjust preferences manually'),
+              child: Text(
+                'Adjust preferences manually',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: Colors.black54,
+                ),
+              ),
             ),
           ),
         ],
@@ -250,39 +387,79 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
     );
   }
 
-  Widget _buildExtractedRow(IconData icon, String label, String value) {
+  Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.grey.shade600),
-          const SizedBox(width: 8),
-          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w500)),
-          Text(value),
+          Icon(
+            icon,
+            size: 20,
+            color: Colors.black54,
+          ),
+          const SizedBox(width: 12),
+          Text(
+            '$label: ',
+            style: GoogleFonts.inter(
+              fontWeight: FontWeight.w500,
+              fontSize: 15,
+            ),
+          ),
+          Text(
+            value,
+            style: GoogleFonts.inter(
+              fontSize: 15,
+              color: Colors.black87,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPriorityBar(String label, double value, Color color) {
+  Widget _buildPriorityBar(String label, double value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          SizedBox(width: 100, child: Text(label, style: const TextStyle(fontSize: 13))),
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: value,
-                backgroundColor: Colors.grey.shade200,
-                valueColor: AlwaysStoppedAnimation(color),
-                minHeight: 8,
+            child: Container(
+              height: 6,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: value,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          Text('${(value * 100).toInt()}%', style: const TextStyle(fontSize: 12)),
+          Text(
+            '${(value * 100).toInt()}%',
+            style: GoogleFonts.montserrat(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ],
       ),
     );
@@ -290,29 +467,24 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
 
   Widget _buildExampleChip(String example) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         onTap: () => _useExample(example),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey.shade300),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black.withOpacity(0.1)),
           ),
-          child: Row(
-            children: [
-              Icon(Icons.lightbulb_outline, size: 18, color: Colors.amber.shade700),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  example,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                ),
-              ),
-            ],
+          child: Text(
+            example,
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.black87,
+            ),
           ),
         ),
       ),
@@ -338,32 +510,36 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
   }
 
   Widget _buildConfidenceBadge(String confidence) {
-    Color color;
+    Color bgColor;
     String label;
     
     switch (confidence) {
       case 'high':
-        color = Colors.green;
+        bgColor = Colors.black;
         label = 'High Confidence';
         break;
       case 'low':
-        color = Colors.orange;
+        bgColor = Colors.black38;
         label = 'Best Guess';
         break;
       default:
-        color = Colors.blue;
+        bgColor = Colors.black87;
         label = 'Confident';
     }
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withAlpha(30),
+        color: bgColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w600),
+        style: GoogleFonts.montserrat(
+          fontSize: 10,
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }

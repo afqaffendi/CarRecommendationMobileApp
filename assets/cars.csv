@@ -75,3 +75,10 @@ Carlist,Toyota,Fortuner 2.8 Vrz,241000,2.8L,2026,6.5,5,400,4,4000,120,0.375,73
 Carlist,Honda,Civic 2.0 Type,276000,2.0L,2024,4.0,5,497,5,5500,184,0.368,74
 Carlist,Toyota,Land Cruiser 3.3,488000,3.3L,2024,10.0,7,230,5,4000,120,0.273,75
 Carlist,Toyota,Alphard 2.4 Executive,548000,2.4L,2026,9.5,7,190,5,4000,120,0.254,76
+Carlist,Proton,e.MAS 5 Premium,72800,Electric (40kWh),2026,0.1,5,375,4,3000,114,0.793,1
+Carlist,Proton,e.MAS 5 Prime,59800,Electric (30kWh),2026,0.1,5,375,4,3000,78,0.783,2
+Carlist,Proton,e.MAS 7 Prime,109800,Electric (50kWh),2026,0.1,5,461,5,2500,218,0.745,3
+Carlist,Proton,e.MAS 7 Premium,123800,Electric (60kWh),2026,0.1,5,461,5,2500,218,0.696,4
+Carlist,Proton,e.MAS 7 PHEV Prime,109800,1.5L Hybrid,2026,4.3,5,528,5,8000,262,0.242,5
+Carlist,Proton,e.MAS 7 PHEV Premium,123800,1.5L Hybrid,2026,4.3,5,528,5,8000,262,0.220,6
+Carlist,Proton,e.MAS 7 PHEV Premium+,129800,1.5L Hybrid,2026,4.4,5,528,5,8000,262,0.213,7

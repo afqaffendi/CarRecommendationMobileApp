@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/database_service.dart';
 import 'screens/lifestyle_input_screen.dart';
+import 'screens/database_management_screen.dart';
+import 'screens/favorites_screen.dart';
+import 'screens/image_gallery_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize environment variables
+  await dotenv.load(fileName: ".env");
+  
+  // Initialize database service
   await DatabaseService.initialize();
+  
   runApp(const MyApp());
 }
 
@@ -16,7 +27,66 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Car Recommendation',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: const ColorScheme.light(
+          brightness: Brightness.light,
+          primary: Colors.black,
+          onPrimary: Colors.white,
+          secondary: Color(0xFF2C2C2C),
+          onSecondary: Colors.white,
+          surface: Colors.white,
+          onSurface: Colors.black,
+          background: Color(0xFFFAFAFA),
+          onBackground: Colors.black,
+        ),
+        scaffoldBackgroundColor: const Color(0xFFFAFAFA),
+        appBarTheme: AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          titleTextStyle: GoogleFonts.poppins(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            textStyle: GoogleFonts.inter(
+              fontWeight: FontWeight.w500,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.black,
+            foregroundColor: Colors.white,
+            textStyle: GoogleFonts.inter(
+              fontWeight: FontWeight.w500,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(
+            foregroundColor: Colors.black54,
+            textStyle: GoogleFonts.inter(),
+          ),
+        ),
+        cardTheme: const CardThemeData(
+          color: Colors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+          ),
+        ),
         useMaterial3: true,
       ),
       home: const HomeScreen(),
@@ -32,103 +102,210 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primaryContainer,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.directions_car,
-                    size: 100,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Malaysian Car\nRecommender',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'AI-powered recommendations using\nCBF + TOPSIS algorithm',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  _buildFeatureRow(Icons.filter_alt, 'Content-Based Filtering'),
-                  const SizedBox(height: 12),
-                  _buildFeatureRow(Icons.analytics, 'TOPSIS Ranking'),
-                  const SizedBox(height: 12),
-                  _buildFeatureRow(Icons.auto_awesome, 'AI Explanations'),
-                  const SizedBox(height: 48),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: FilledButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LifestyleInputScreen(),
-                          ),
-                        );
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Theme.of(context).colorScheme.primary,
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Find My Car',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+        width: double.infinity,
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          children: [
+            const Spacer(flex: 1),
+            
+            // App Icon/Logo Area
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Icon(
+                Icons.directions_car_rounded,
+                size: 60,
+                color: Colors.white,
               ),
             ),
-          ),
+            const SizedBox(height: 32),
+            
+            // Title
+            Text(
+              'Car Finder',
+              style: GoogleFonts.poppins(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Subtitle
+            Text(
+              'AI-powered car recommendations\nfor Malaysian market',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: Colors.black54,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 48),
+            
+            // Feature Pills
+            _buildFeaturePill('Content-Based Filtering'),
+            const SizedBox(height: 12),
+            _buildFeaturePill('TOPSIS Multi-Criteria Ranking'),
+            const SizedBox(height: 12),
+            _buildFeaturePill('Natural Language Processing'),
+            
+            const Spacer(flex: 2),
+            
+            // Main CTA Button
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: FilledButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LifestyleInputScreen(),
+                    ),
+                  );
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Find My Car',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward_rounded, size: 20),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Database Management Link
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const DatabaseManagementScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.storage_rounded, size: 20),
+                label: Text(
+                  'Manage Database',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.black54,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Favorites Link
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const FavoritesScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.favorite_rounded, size: 20),
+                label: Text(
+                  'My Favorites',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.black54,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Image Gallery Link
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ImageGalleryScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.photo_library_rounded, size: 20),
+                label: Text(
+                  'View Car Images',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.black54,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
         ),
       ),
     );
   }
 
-  static Widget _buildFeatureRow(IconData icon, String text) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, color: Colors.white70, size: 20),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: const TextStyle(color: Colors.white70, fontSize: 14),
-        ),
-      ],
+  static Widget _buildFeaturePill(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.black.withOpacity(0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: const BoxDecoration(
+              color: Colors.black,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: Colors.black87,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/car.dart';
 import '../models/user_preferences.dart';
 import '../services/car_data_loader.dart';
@@ -6,6 +7,8 @@ import '../services/cbf_service.dart';
 import '../services/topsis_service.dart';
 import '../services/ai_explanation_service.dart';
 import '../services/database_service.dart';
+import '../widgets/car_image_widget.dart';
+import 'favorites_screen.dart';
 
 const String _apiKey = 'AIzaSyCNGkdzg4FL06QxfmiescIJD16WBhI3GNw';
 
@@ -41,7 +44,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
       if (DatabaseService.hasCachedCars()) {
         allCars = DatabaseService.getCachedCars();
       } else {
-        allCars = await CarDataLoader.loadFromAsset('assets/malaysian_cars.csv');
+        allCars = await CarDataLoader.loadFromAsset('assets/cars.csv');
         await DatabaseService.cacheCars(allCars);
       }
       _totalCars = allCars.length;
@@ -81,22 +84,103 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
     });
   }
 
+  Future<void> _toggleFavorite(Car car) async {
+    final carKey = '${car.brand}_${car.model}_${car.variant ?? 'base'}';
+    try {
+      if (DatabaseService.isFavorite(carKey)) {
+        await DatabaseService.removeFromFavorites(carKey);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Removed ${car.displayName} from favorites',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else {
+        await DatabaseService.addToFavorites(carKey);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Added ${car.displayName} to favorites',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+      setState(() {}); // Refresh to update favorite icons
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating favorites: $e', style: GoogleFonts.inter()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recommendations'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(
+          'Your Perfect Car',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.favorite_rounded),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FavoritesScreen(),
+                ),
+              );
+            },
+            tooltip: 'My Favorites',
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: _loadAndRankCars,
             tooltip: 'Refresh',
           ),
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(
+                    color: Colors.black,
+                    strokeWidth: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Finding your perfect car...',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            )
           : _rankedCars.isEmpty
               ? _buildEmptyState()
               : _buildResultsList(),
@@ -110,22 +194,59 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off, size: 80, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            const Text(
-              'No cars match your criteria',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Try adjusting your budget or preferences',
-              style: TextStyle(color: Colors.grey.shade600),
-              textAlign: TextAlign.center,
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Icon(
+                Icons.search_off_rounded,
+                size: 60,
+                color: Colors.black38,
+              ),
             ),
             const SizedBox(height: 24),
-            FilledButton.tonal(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Adjust Preferences'),
+            Text(
+              'No cars match your criteria',
+              style: GoogleFonts.poppins(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Try adjusting your budget or preferences\nto discover more options',
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: Colors.black54,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Text(
+                  'Adjust Preferences',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -149,16 +270,14 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
         // Results Header
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                const Icon(Icons.format_list_numbered, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Top ${_rankedCars.length} Matches',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+            child: Text(
+              'Top ${_rankedCars.length} Recommendations',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
           ),
         ),
@@ -172,7 +291,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
         ),
 
         const SliverToBoxAdapter(
-          child: SizedBox(height: 24),
+          child: SizedBox(height: 32),
         ),
       ],
     );
@@ -180,38 +299,33 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
 
   Widget _buildSummaryHeader() {
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.secondary,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         children: [
           Expanded(
             child: _buildSummaryItem(
-              icon: Icons.directions_car,
+              icon: Icons.directions_car_rounded,
               value: '$_totalCars',
               label: 'Total Cars',
             ),
           ),
-          Container(width: 1, height: 40, color: Colors.white30),
+          Container(width: 1, height: 50, color: Colors.white24),
           Expanded(
             child: _buildSummaryItem(
-              icon: Icons.filter_alt,
+              icon: Icons.filter_alt_rounded,
               value: '$_filteredCount',
-              label: 'After CBF',
+              label: 'Filtered',
             ),
           ),
-          Container(width: 1, height: 40, color: Colors.white30),
+          Container(width: 1, height: 50, color: Colors.white24),
           Expanded(
             child: _buildSummaryItem(
-              icon: Icons.stars,
+              icon: Icons.star_rounded,
               value: '${_rankedCars.length}',
               label: 'Ranked',
             ),
@@ -228,19 +342,22 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
   }) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white, size: 24),
-        const SizedBox(height: 4),
+        Icon(icon, color: Colors.white, size: 28),
+        const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
+          style: GoogleFonts.poppins(
             color: Colors.white,
-            fontSize: 20,
+            fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
+          style: GoogleFonts.inter(
+            color: Colors.white70,
+            fontSize: 12,
+          ),
         ),
       ],
     );
@@ -248,39 +365,64 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
 
   Widget _buildExplanationCard() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.amber.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.amber.shade200),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome, color: Colors.amber.shade700),
-              const SizedBox(width: 8),
-              const Text(
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
                 'AI Explanation',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: GoogleFonts.poppins(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               const Spacer(),
               if (_isExplaining)
                 const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                 ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           _isExplaining
-              ? const Text('Analyzing your recommendations...')
+              ? Text(
+                  'Analyzing your recommendations...',
+                  style: GoogleFonts.inter(
+                    color: Colors.black54,
+                    fontSize: 15,
+                  ),
+                )
               : Text(
                   _explanation,
-                  style: const TextStyle(height: 1.5),
+                  style: GoogleFonts.inter(
+                    height: 1.6,
+                    fontSize: 15,
+                    color: Colors.black87,
+                  ),
                 ),
         ],
       ),
@@ -290,82 +432,81 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
   Widget _buildCarCard(RankedCar rankedCar) {
     final car = rankedCar.car;
     final isTopPick = rankedCar.rank == 1;
+    final carKey = '${car.brand}_${car.model}_${car.variant ?? 'base'}';
+    final isFavorited = DatabaseService.isFavorite(carKey);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isTopPick ? Colors.amber : Colors.grey.shade200,
+          color: isTopPick ? Colors.black : Colors.black.withOpacity(0.1),
           width: isTopPick ? 2 : 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(13),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         children: [
-          // Rank Badge & Title
+          // Header with rank, car info, and favorite button
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             child: Row(
               children: [
                 _buildRankBadge(rankedCar.rank),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         car.displayName,
-                        style: const TextStyle(
+                        style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: Colors.black,
                         ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
                         'RM ${car.price.toStringAsFixed(0)}',
-                        style: TextStyle(
+                        style: GoogleFonts.inter(
                           fontSize: 16,
-                          color: Colors.green.shade700,
+                          color: Colors.black,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
                   ),
                 ),
+                IconButton(
+                  onPressed: () => _toggleFavorite(car),
+                  icon: Icon(
+                    isFavorited ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                    color: isFavorited ? Colors.red : Colors.black54,
+                  ),
+                  tooltip: isFavorited ? 'Remove from favorites' : 'Add to favorites',
+                ),
+                const SizedBox(width: 8),
                 _buildScoreBadge(rankedCar.score),
               ],
             ),
           ),
 
+          // Car Image
+          _buildCarImage(car),
+
           // Specs Row
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                _buildSpecChip(Icons.local_gas_station, '${car.fuelEconomy}L/100km'),
-                const SizedBox(width: 8),
-                _buildSpecChip(Icons.health_and_safety, '${car.safetyRating}/5'),
-                const SizedBox(width: 8),
-                _buildSpecChip(Icons.event_seat, '${car.seats} seats'),
-              ],
-            ),
-          ),
-
-          // Tags Row
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: Row(
-              children: [
-                _buildTag(car.usageType, Icons.route),
-                const SizedBox(width: 8),
-                _buildTag(car.parkingSize, Icons.local_parking),
+                _buildSpecChip(Icons.local_gas_station_rounded, '${car.fuelEconomy}L/100km'),
+                _buildSpecChip(Icons.shield_rounded, '${car.safetyRating}/5'),
+                _buildSpecChip(Icons.people_rounded, '${car.seats} seats'),
+                _buildSpecChip(Icons.route_rounded, car.usageType),
+                _buildSpecChip(Icons.local_parking_rounded, car.parkingSize),
               ],
             ),
           ),
@@ -375,40 +516,20 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
   }
 
   Widget _buildRankBadge(int rank) {
-    Color bgColor;
-    Color textColor;
-
-    switch (rank) {
-      case 1:
-        bgColor = Colors.amber;
-        textColor = Colors.black;
-        break;
-      case 2:
-        bgColor = Colors.grey.shade400;
-        textColor = Colors.white;
-        break;
-      case 3:
-        bgColor = Colors.brown.shade300;
-        textColor = Colors.white;
-        break;
-      default:
-        bgColor = Colors.grey.shade200;
-        textColor = Colors.black54;
-    }
-
     return Container(
-      width: 40,
-      height: 40,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
-        color: bgColor,
-        shape: BoxShape.circle,
+        color: rank == 1 ? Colors.black : Colors.black.withOpacity(0.7),
+        borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
       child: Text(
         '#$rank',
-        style: TextStyle(
+        style: GoogleFonts.poppins(
           fontWeight: FontWeight.bold,
-          color: textColor,
+          color: Colors.white,
+          fontSize: 16,
         ),
       ),
     );
@@ -416,19 +537,23 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
 
   Widget _buildScoreBadge(double score) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.black.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black.withOpacity(0.1)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.trending_up, size: 16),
+          const Icon(Icons.trending_up_rounded, size: 16),
           const SizedBox(width: 4),
           Text(
             '${(score * 100).toStringAsFixed(0)}%',
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: GoogleFonts.montserrat(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -437,42 +562,39 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
 
   Widget _buildSpecChip(IconData icon, String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(20),
+        color: Colors.black.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.black.withOpacity(0.1)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.grey.shade700),
-          const SizedBox(width: 4),
+          Icon(icon, size: 16, color: Colors.black54),
+          const SizedBox(width: 6),
           Text(
             text,
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              color: Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTag(String label, IconData icon) {
+  Widget _buildCarImage(Car car) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: Colors.blue.shade700),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
-          ),
-        ],
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: CarImageWidget(
+        car: car,
+        width: double.infinity,
+        height: 200,
+        size: 'medium',
+        borderRadius: BorderRadius.circular(12),
       ),
     );
   }

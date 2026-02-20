@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/user_preferences.dart';
 import '../services/database_service.dart';
 import 'recommendation_results_screen.dart';
@@ -25,54 +26,67 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your Priorities'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(
+          'Your Priorities',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'What matters most to you?',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Adjust sliders to prioritize your preferences',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: Colors.black54,
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 32),
 
             // Price Priority Slider
             _buildSliderSection(
-              icon: Icons.attach_money,
+              icon: Icons.attach_money_rounded,
               title: 'Price',
               subtitle: 'Lower price cars ranked higher',
               value: _prefs.priceWeight,
-              color: Colors.green,
               onChanged: (v) => setState(() => _prefs.priceWeight = v),
             ),
             const SizedBox(height: 24),
 
             // Fuel Economy Slider
             _buildSliderSection(
-              icon: Icons.local_gas_station,
+              icon: Icons.local_gas_station_rounded,
               title: 'Fuel Economy',
               subtitle: 'Better mileage ranked higher',
               value: _prefs.fuelEconomyWeight,
-              color: Colors.blue,
               onChanged: (v) => setState(() => _prefs.fuelEconomyWeight = v),
             ),
             const SizedBox(height: 24),
 
             // Safety Slider
             _buildSliderSection(
-              icon: Icons.health_and_safety,
+              icon: Icons.health_and_safety_rounded,
               title: 'Safety',
               subtitle: 'Higher safety rating ranked higher',
               value: _prefs.safetyWeight,
-              color: Colors.orange,
               onChanged: (v) => setState(() => _prefs.safetyWeight = v),
             ),
             const SizedBox(height: 32),
@@ -87,12 +101,24 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
               height: 56,
               child: FilledButton(
                 onPressed: _onGetRecommendations,
-                child: const Row(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.auto_awesome),
-                    SizedBox(width: 8),
-                    Text('Get Recommendations', style: TextStyle(fontSize: 18)),
+                    const Icon(Icons.auto_awesome_rounded),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Get Recommendations',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -108,15 +134,14 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
     required String title,
     required String subtitle,
     required double value,
-    required Color color,
     required ValueChanged<double> onChanged,
   }) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: Colors.black.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,30 +149,32 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: color.withAlpha(51),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: color),
+                child: Icon(icon, color: Colors.white, size: 20),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
+                        color: Colors.black,
                       ),
                     ),
                     Text(
                       subtitle,
-                      style: TextStyle(
+                      style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: Colors.grey.shade600,
+                        color: Colors.black54,
                       ),
                     ),
                   ],
@@ -156,27 +183,32 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: color.withAlpha(51),
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.black.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.black.withOpacity(0.1)),
                 ),
                 child: Text(
                   '${(value * 100).toInt()}%',
-                  style: TextStyle(
+                  style: GoogleFonts.montserrat(
                     fontWeight: FontWeight.bold,
-                    color: color,
+                    color: Colors.black,
+                    fontSize: 14,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: color,
-              inactiveTrackColor: color.withAlpha(77),
-              thumbColor: color,
-              overlayColor: color.withAlpha(51),
-              trackHeight: 8,
+              activeTrackColor: Colors.black,
+              inactiveTrackColor: Colors.black.withOpacity(0.1),
+              thumbColor: Colors.black,
+              overlayColor: Colors.black.withOpacity(0.1),
+              trackHeight: 6,
+              thumbShape: const RoundSliderThumbShape(
+                enabledThumbRadius: 10,
+              ),
             ),
             child: Slider(
               value: value,
@@ -189,8 +221,20 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Not Important', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-              Text('Very Important', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+              Text(
+                'Not Important',
+                style: GoogleFonts.inter(
+                  color: Colors.black38,
+                  fontSize: 12,
+                ),
+              ),
+              Text(
+                'Very Important',
+                style: GoogleFonts.inter(
+                  color: Colors.black38,
+                  fontSize: 12,
+                ),
+              ),
             ],
           ),
         ],
@@ -205,51 +249,85 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
     final safetyPercent = total > 0 ? (_prefs.safetyWeight / total * 100).toInt() : 34;
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withAlpha(77),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.black.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Weight Distribution',
-            style: TextStyle(fontWeight: FontWeight.w600),
+            style: GoogleFonts.poppins(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: SizedBox(
-              height: 24,
+              height: 32,
               child: Row(
                 children: [
                   Expanded(
                     flex: pricePercent,
-                    child: Container(color: Colors.green, alignment: Alignment.center,
-                      child: Text('$pricePercent%', style: const TextStyle(color: Colors.white, fontSize: 12))),
+                    child: Container(
+                      color: Colors.black,
+                      alignment: Alignment.center,
+                      child: Text(
+                        '$pricePercent%',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                   Expanded(
                     flex: fuelPercent,
-                    child: Container(color: Colors.blue, alignment: Alignment.center,
-                      child: Text('$fuelPercent%', style: const TextStyle(color: Colors.white, fontSize: 12))),
+                    child: Container(
+                      color: Colors.black.withOpacity(0.7),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '$fuelPercent%',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                   Expanded(
                     flex: safetyPercent,
-                    child: Container(color: Colors.orange, alignment: Alignment.center,
-                      child: Text('$safetyPercent%', style: const TextStyle(color: Colors.white, fontSize: 12))),
+                    child: Container(
+                      color: Colors.black.withOpacity(0.5),
+                      alignment: Alignment.center,
+                      child: Text(
+                        '$safetyPercent%',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildLegendItem(Colors.green, 'Price'),
-              _buildLegendItem(Colors.blue, 'Fuel'),
-              _buildLegendItem(Colors.orange, 'Safety'),
+              _buildLegendItem(Colors.black, 'Price'),
+              _buildLegendItem(Colors.black.withOpacity(0.7), 'Fuel'),
+              _buildLegendItem(Colors.black.withOpacity(0.5), 'Safety'),
             ],
           ),
         ],
@@ -268,8 +346,14 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 12)),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: Colors.black87,
+          ),
+        ),
       ],
     );
   }

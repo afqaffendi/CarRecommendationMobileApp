@@ -43,3 +43,13 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Environment variables - IMPORTANT!
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Cloudinary credentials
+cloudinary_config.dart
