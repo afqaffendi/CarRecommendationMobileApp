@@ -232,6 +232,18 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
               ),
               textAlign: TextAlign.center,
             ),
+            if (_explanation.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                _explanation,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Colors.redAccent,
+                  height: 1.4,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
             const SizedBox(height: 32),
             SizedBox(
               width: double.infinity,
