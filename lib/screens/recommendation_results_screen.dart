@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/car.dart';
 import '../models/user_preferences.dart';
 import '../services/cbf_service.dart';
@@ -44,9 +43,30 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
       List<Car> allCars = await _firestoreService.getCars();
       _totalCars = allCars.length;
 
+      if (allCars.isEmpty) {
+        setState(() {
+          _rankedCars = [];
+          _filteredCount = 0;
+          _isLoading = false;
+          _explanation =
+              'No cars were fetched from Firestore. Check that your collection name is cars and Firestore rules allow reads.';
+        });
+        return;
+      }
+
       // Stage 1: CBF Filtering
-      final filteredCars = CBFService.filterCars(allCars, widget.preferences);
+      var filteredCars = CBFService.filterCars(allCars, widget.preferences);
       _filteredCount = filteredCars.length;
+
+      // If hard constraints are too strict, fall back to budget-only filtering.
+      if (filteredCars.isEmpty) {
+        filteredCars = allCars.where((car) => car.price <= widget.preferences.budget).toList();
+      }
+
+      // Last-resort fallback so users still see recommendations.
+      if (filteredCars.isEmpty) {
+        filteredCars = allCars;
+      }
 
       // Stage 2: TOPSIS Ranking
       _rankedCars = TopsisService.rankCars(filteredCars, widget.preferences);
@@ -92,7 +112,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
           SnackBar(
             content: Text(
               'Removed ${car.displayName} from favorites',
-              style: GoogleFonts.inter(),
+              style: TextStyle(),
             ),
             backgroundColor: Colors.orange,
           ),
@@ -103,7 +123,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
           SnackBar(
             content: Text(
               'Added ${car.displayName} to favorites',
-              style: GoogleFonts.inter(),
+              style: TextStyle(),
             ),
             backgroundColor: Colors.green,
           ),
@@ -118,7 +138,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
       appBar: AppBar(
         title: Text(
           'Your Perfect Car',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -158,7 +178,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
                   const SizedBox(height: 16),
                   Text(
                     'Finding your perfect car...',
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       fontSize: 16,
                       color: Colors.black54,
                     ),
@@ -195,7 +215,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
             const SizedBox(height: 24),
             Text(
               'No cars match your criteria',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
@@ -205,7 +225,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
             const SizedBox(height: 12),
             Text(
               'Try adjusting your budget or preferences\nto discover more options',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 16,
                 color: Colors.black54,
                 height: 1.5,
@@ -226,7 +246,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
                 ),
                 child: Text(
                   'Adjust Preferences',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -258,7 +278,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
             child: Text(
               'Top ${_rankedCars.length} Recommendations',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
@@ -331,7 +351,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
         const SizedBox(height: 8),
         Text(
           value,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
@@ -339,7 +359,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
         ),
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             color: Colors.white70,
             fontSize: 12,
           ),
@@ -378,7 +398,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
               const SizedBox(width: 12),
               Text(
                 'AI Explanation',
-                style: GoogleFonts.poppins(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -396,14 +416,14 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
           _isExplaining
               ? Text(
                   'Analyzing your recommendations...',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     color: Colors.black54,
                     fontSize: 15,
                   ),
                 )
               : Text(
                   _explanation,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     height: 1.6,
                     fontSize: 15,
                     color: Colors.black87,
@@ -444,7 +464,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
                     children: [
                       Text(
                         car.displayName,
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
@@ -453,7 +473,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
                       const SizedBox(height: 4),
                       Text(
                         'RM ${car.price.toStringAsFixed(0)}',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 16,
                           color: Colors.black,
                           fontWeight: FontWeight.w600,
@@ -509,7 +529,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
       alignment: Alignment.center,
       child: Text(
         '#$rank',
-        style: GoogleFonts.poppins(
+        style: TextStyle(
           fontWeight: FontWeight.bold,
           color: Colors.white,
           fontSize: 16,
@@ -533,7 +553,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
           const SizedBox(width: 4),
           Text(
             '${(score * 100).toStringAsFixed(0)}%',
-            style: GoogleFonts.montserrat(
+            style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 14,
             ),
@@ -558,7 +578,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
           const SizedBox(width: 6),
           Text(
             text,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 12,
               color: Colors.black87,
               fontWeight: FontWeight.w500,

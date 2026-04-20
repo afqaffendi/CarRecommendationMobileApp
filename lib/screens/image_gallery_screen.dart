@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/car.dart';
 import '../services/database_service.dart';
 import '../services/simple_cloudinary_service.dart';
@@ -78,7 +77,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                   Expanded(
                     child: Text(
                       car.displayName,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
@@ -104,7 +103,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
               
               Text(
                 'Image Details:',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -116,11 +115,11 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
               
               Text(
                 'Expected filename in Cloudinary:',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                style: TextStyle(fontWeight: FontWeight.w500),
               ),
               SelectableText(
                 '$publicId.jpg',
-                style: GoogleFonts.sourceCodePro(fontSize: 12),
+                style: TextStyle(fontSize: 12),
               ),
               
               const SizedBox(height: 16),
@@ -154,7 +153,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                   Expanded(
                     child: Text(
                       'Image URLs - ${car.displayName}',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -175,12 +174,12 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                   children: [
                     Text(
                       '${entry.key.toUpperCase()}:',
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                      style: TextStyle(fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 4),
                     SelectableText(
                       entry.value ?? 'No image available',
-                      style: GoogleFonts.sourceCodePro(
+                      style: TextStyle(
                         fontSize: 10,
                         color: entry.value != null ? Colors.black : Colors.red,
                       ),
@@ -201,7 +200,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       appBar: AppBar(
         title: Text(
           'Car Image Gallery',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         backgroundColor: Colors.blue.shade700,
         foregroundColor: Colors.white,
@@ -264,7 +263,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                               const SizedBox(height: 16),
                               Text(
                                 'No cars found',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 18,
                                   color: Colors.grey.shade600,
                                 ),
@@ -272,7 +271,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                               const SizedBox(height: 8),
                               Text(
                                 'Import your car data first',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.grey.shade500,
                                 ),
@@ -305,7 +304,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       children: [
         Text(
           value,
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
             color: color,
@@ -313,7 +312,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
         ),
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 12,
             color: Colors.grey.shade600,
           ),
@@ -357,7 +356,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                   children: [
                     Text(
                       car.brand,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: Colors.grey.shade600,
@@ -368,7 +367,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                     const SizedBox(height: 2),
                     Text(
                       car.model,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
@@ -378,7 +377,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                     const Spacer(),
                     Text(
                       'RM ${car.price.toStringAsFixed(0)}',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.blue.shade700,

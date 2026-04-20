@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../services/database_service.dart';
 import '../models/car.dart';
 
@@ -50,7 +49,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           SnackBar(
             content: Text(
               'Removed ${car.displayName} from favorites',
-              style: GoogleFonts.inter(),
+              style: TextStyle(),
             ),
             backgroundColor: Colors.orange,
           ),
@@ -60,7 +59,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error removing from favorites: $e', style: GoogleFonts.inter()),
+            content: Text('Error removing from favorites: $e', style: TextStyle()),
             backgroundColor: Colors.red,
           ),
         );
@@ -74,7 +73,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       appBar: AppBar(
         title: Text(
           'My Favorites',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded),
@@ -119,7 +118,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             const SizedBox(height: 24),
             Text(
               'No Favorites Yet',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
@@ -128,7 +127,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
             const SizedBox(height: 12),
             Text(
               'Start exploring cars and add them\nto your favorites for easy access',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 16,
                 color: Colors.black54,
                 height: 1.5,
@@ -146,7 +145,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ),
               child: Text(
                 'Discover Cars',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -166,7 +165,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         children: [
           Text(
             'Your Saved Cars',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.black,
@@ -175,7 +174,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           const SizedBox(height: 8),
           Text(
             '${_favoriteCars.length} car${_favoriteCars.length == 1 ? '' : 's'} saved',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 16,
               color: Colors.black54,
             ),
@@ -209,7 +208,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     children: [
                       Text(
                         car.displayName,
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
@@ -218,7 +217,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       const SizedBox(height: 4),
                       Text(
                         'RM ${car.price.toStringAsFixed(0)}',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           fontSize: 16,
                           color: Colors.black,
                           fontWeight: FontWeight.w600,
@@ -270,7 +269,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           const SizedBox(width: 6),
           Text(
             text,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 12,
               color: Colors.black87,
               fontWeight: FontWeight.w500,

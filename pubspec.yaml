@@ -35,7 +35,6 @@ dependencies:
   google_generative_ai: ^0.4.5  # For the Gemini Inference Engine
   csv: ^6.0.0                  # To read your car spec file
   path_provider: ^2.1.2        # To find local storage paths
-  google_fonts: ^6.1.0         # For modern typography
   cloudinary_public: ^0.23.1   # For Cloudinary image management
   image_picker: ^1.0.7         # For picking images from gallery/camera
   http: ^1.1.2                 # For API requests
@@ -44,6 +43,7 @@ dependencies:
   image: ^4.1.7                # For image processing
   firebase_core: ^4.7.0
   cloud_firestore: ^6.3.0
+  firebase_auth: ^6.1.0
 
 dev_dependencies:
   flutter_test:

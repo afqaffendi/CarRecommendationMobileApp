@@ -43,3 +43,4 @@ class UserPreferences {
     safetyWeight: map['safetyWeight']?.toDouble() ?? 0.5,
   );
 }
+

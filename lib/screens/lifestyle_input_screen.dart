@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../services/database_service.dart';
 import '../services/lifestyle_parser_service.dart';
 import 'preference_sliders_screen.dart';
@@ -38,7 +37,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
         SnackBar(
           content: Text(
             'Please type something first',
-            style: GoogleFonts.inter(),
+            style: TextStyle(),
           ),
         ),
       );
@@ -86,7 +85,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
       appBar: AppBar(
         title: Text(
           'Tell Us About You',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -103,7 +102,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
             // Header
             Text(
               'What car do you need?',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
@@ -112,7 +111,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
             const SizedBox(height: 8),
             Text(
               'Just type naturally - in English, Malay, or mix!\nOur AI understands you.',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 16,
                 color: Colors.black54,
                 height: 1.5,
@@ -130,13 +129,13 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
               child: TextField(
                 controller: _textController,
                 maxLines: 4,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 16,
                   height: 1.5,
                 ),
                 decoration: InputDecoration(
                   hintText: 'Type anything! e.g. "nak kereta murah untuk kerja" or "family car with good safety"...',
-                  hintStyle: GoogleFonts.inter(
+                  hintStyle: TextStyle(
                     color: Colors.black38,
                     fontSize: 15,
                   ),
@@ -179,7 +178,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
                           const SizedBox(width: 12),
                           Text(
                             'Analyzing...',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: 16,
                             ),
@@ -193,7 +192,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
                           const SizedBox(width: 8),
                           Text(
                             'Analyze My Needs',
-                            style: GoogleFonts.inter(
+                            style: TextStyle(
                               fontWeight: FontWeight.w500,
                               fontSize: 16,
                             ),
@@ -213,7 +212,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
             const SizedBox(height: 40),
             Text(
               'Or try an example:',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
               ),
@@ -259,7 +258,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
               Expanded(
                 child: Text(
                   'Analysis Complete',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
@@ -271,7 +270,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
           const SizedBox(height: 16),
           Text(
             result.summary,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               color: Colors.black54,
               fontSize: 15,
               height: 1.5,
@@ -299,7 +298,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
           const SizedBox(height: 24),
           Text(
             'Detected Priorities',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
             ),
@@ -313,7 +312,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
             const SizedBox(height: 24),
             Text(
               'What I Detected',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 16,
               ),
@@ -331,7 +330,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
                 ),
                 child: Text(
                   need,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 12,
                     color: Colors.black87,
                   ),
@@ -353,7 +352,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
               ),
               child: Text(
                 'Continue with these preferences',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.w500,
                   fontSize: 15,
                 ),
@@ -375,7 +374,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
               },
               child: Text(
                 'Adjust preferences manually',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontSize: 14,
                   color: Colors.black54,
                 ),
@@ -400,14 +399,14 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
           const SizedBox(width: 12),
           Text(
             '$label: ',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontWeight: FontWeight.w500,
               fontSize: 15,
             ),
           ),
           Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 15,
               color: Colors.black87,
             ),
@@ -426,7 +425,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
             width: 100,
             child: Text(
               label,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 14,
                 color: Colors.black87,
               ),
@@ -455,7 +454,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
           const SizedBox(width: 8),
           Text(
             '${(value * 100).toInt()}%',
-            style: GoogleFonts.montserrat(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -481,7 +480,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
           ),
           child: Text(
             example,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 14,
               color: Colors.black87,
             ),
@@ -535,7 +534,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
       ),
       child: Text(
         label,
-        style: GoogleFonts.montserrat(
+        style: TextStyle(
           fontSize: 10,
           color: Colors.white,
           fontWeight: FontWeight.w500,

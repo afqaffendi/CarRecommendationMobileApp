@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/user_preferences.dart';
 import '../services/database_service.dart';
 import 'recommendation_results_screen.dart';
@@ -28,7 +27,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
       appBar: AppBar(
         title: Text(
           'Your Priorities',
-          style: GoogleFonts.poppins(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -44,7 +43,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
           children: [
             Text(
               'What matters most to you?',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
@@ -53,7 +52,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
             const SizedBox(height: 8),
             Text(
               'Adjust sliders to prioritize your preferences',
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 16,
                 color: Colors.black54,
                 height: 1.5,
@@ -114,7 +113,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
                     const SizedBox(width: 8),
                     Text(
                       'Get Recommendations',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -164,7 +163,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: Colors.black,
@@ -172,7 +171,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
                     ),
                     Text(
                       subtitle,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 14,
                         color: Colors.black54,
                       ),
@@ -189,7 +188,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
                 ),
                 child: Text(
                   '${(value * 100).toInt()}%',
-                  style: GoogleFonts.montserrat(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
                     fontSize: 14,
@@ -223,14 +222,14 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
             children: [
               Text(
                 'Not Important',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: Colors.black38,
                   fontSize: 12,
                 ),
               ),
               Text(
                 'Very Important',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: Colors.black38,
                   fontSize: 12,
                 ),
@@ -260,7 +259,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
         children: [
           Text(
             'Weight Distribution',
-            style: GoogleFonts.poppins(
+            style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
             ),
@@ -279,7 +278,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
                       alignment: Alignment.center,
                       child: Text(
                         '$pricePercent%',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -294,7 +293,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
                       alignment: Alignment.center,
                       child: Text(
                         '$fuelPercent%',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -309,7 +308,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
                       alignment: Alignment.center,
                       child: Text(
                         '$safetyPercent%',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -349,7 +348,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
         const SizedBox(width: 6),
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             fontSize: 12,
             color: Colors.black87,
           ),
@@ -371,3 +370,4 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
     }
   }
 }
+

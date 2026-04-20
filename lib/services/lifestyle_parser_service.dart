@@ -216,3 +216,4 @@ class ParsedLifestyle {
     required this.rawInput,
   });
 }
+

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/database_service.dart';
 import 'screens/lifestyle_input_screen.dart';
@@ -8,6 +7,7 @@ import 'screens/image_gallery_screen.dart';
 import 'screens/image_debug_screen.dart';
 import 'package:car_recommendation_app/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +16,17 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Sign in anonymously so Firestore rules that require auth can be satisfied.
+  try {
+    final auth = FirebaseAuth.instance;
+    if (auth.currentUser == null) {
+      await auth.signInAnonymously();
+    }
+  } catch (e) {
+    // App can still run, but Firestore reads may be denied by security rules.
+    print('Anonymous auth failed: $e');
+  }
 
   // Initialize environment variables
   await dotenv.load(fileName: ".env");
@@ -48,7 +59,7 @@ class MyApp extends StatelessWidget {
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 0,
-          titleTextStyle: GoogleFonts.poppins(
+          titleTextStyle: TextStyle(
             color: Colors.black,
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -58,7 +69,7 @@ class MyApp extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.black,
             foregroundColor: Colors.white,
-            textStyle: GoogleFonts.inter(
+            textStyle: TextStyle(
               fontWeight: FontWeight.w500,
             ),
             shape: RoundedRectangleBorder(
@@ -70,7 +81,7 @@ class MyApp extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: Colors.black,
             foregroundColor: Colors.white,
-            textStyle: GoogleFonts.inter(
+            textStyle: TextStyle(
               fontWeight: FontWeight.w500,
             ),
             shape: RoundedRectangleBorder(
@@ -81,7 +92,7 @@ class MyApp extends StatelessWidget {
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             foregroundColor: Colors.black54,
-            textStyle: GoogleFonts.inter(),
+            textStyle: TextStyle(),
           ),
         ),
         cardTheme: const CardThemeData(
@@ -132,7 +143,7 @@ class HomeScreen extends StatelessWidget {
             // Title
             Text(
               'Car Finder',
-              style: GoogleFonts.poppins(
+              style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
@@ -144,7 +155,7 @@ class HomeScreen extends StatelessWidget {
             Text(
               'AI-powered car recommendations\nfor Malaysian market',
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 fontSize: 16,
                 color: Colors.black54,
                 height: 1.5,
@@ -179,7 +190,7 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Text(
                       'Find My Car',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -202,7 +213,7 @@ class HomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.storage_rounded, size: 20),
                 label: Text(
                   'Manage Database',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -230,7 +241,7 @@ class HomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.favorite_rounded, size: 20),
                 label: Text(
                   'My Favorites',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -258,7 +269,7 @@ class HomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.photo_library_rounded, size: 20),
                 label: Text(
                   'View Car Images',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -286,7 +297,7 @@ class HomeScreen extends StatelessWidget {
                 icon: const Icon(Icons.bug_report_rounded, size: 20),
                 label: Text(
                   'Debug Image URLs',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -326,7 +337,7 @@ class HomeScreen extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             text,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               fontSize: 13,
               color: Colors.black87,
               fontWeight: FontWeight.w400,
@@ -337,4 +348,5 @@ class HomeScreen extends StatelessWidget {
     );
   }
 }
+
 

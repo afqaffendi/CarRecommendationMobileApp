@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/car.dart';
 import '../services/database_service.dart';
 import '../services/simple_cloudinary_service.dart';
@@ -70,7 +69,7 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Image URL Debug', style: GoogleFonts.poppins()),
+        title: Text('Image URL Debug', style: TextStyle()),
         backgroundColor: Colors.orange.shade700,
         foregroundColor: Colors.white,
       ),
@@ -101,11 +100,11 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
           children: [
             Text(
               'Cloudinary Connection Test',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             
-            Text('Test Image URL:', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+            Text('Test Image URL:', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
             
             Container(
@@ -120,7 +119,7 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
                   Expanded(
                     child: Text(
                       testImageUrl ?? 'No URL',
-                      style: GoogleFonts.sourceCodePro(fontSize: 12),
+                      style: TextStyle(fontSize: 12),
                     ),
                   ),
                   IconButton(
@@ -159,12 +158,12 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
                                 const SizedBox(height: 8),
                                 Text(
                                   'Test Image Failed to Load',
-                                  style: GoogleFonts.inter(color: Colors.red, fontWeight: FontWeight.w600),
+                                  style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
                                   'Check your Cloudinary credentials',
-                                  style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]),
+                                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                                 ),
                               ],
                             ),
@@ -189,7 +188,7 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
           children: [
             Text(
               'Cloudinary Configuration',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             
@@ -200,7 +199,7 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
             
             Text(
               'Expected URL Pattern:',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             
@@ -213,7 +212,7 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
               ),
               child: Text(
                 'https://res.cloudinary.com/dodi1j67s/image/upload/w_400,h_300,c_fill,q_auto,f_auto/[public_id].jpg',
-                style: GoogleFonts.sourceCodePro(fontSize: 12),
+                style: TextStyle(fontSize: 12),
               ),
             ),
           ],
@@ -231,7 +230,7 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
           children: [
             Text(
               'Car Image URLs (First 5 Cars)',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             
@@ -263,7 +262,7 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
                 Expanded(
                   child: Text(
                     car.displayName,
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
                 Icon(
@@ -287,7 +286,7 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
             ] else ...[
               Text(
                 '❌ No image mapping found',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                   color: Colors.red[700],
@@ -298,7 +297,7 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
             const SizedBox(height: 8),
             
             if (imageUrl != null) ...[
-              Text('Full URL:', style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12)),
+              Text('Full URL:', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
               const SizedBox(height: 4),
               
               Container(
@@ -313,7 +312,7 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
                     Expanded(
                       child: Text(
                         imageUrl,
-                        style: GoogleFonts.sourceCodePro(fontSize: 10),
+                        style: TextStyle(fontSize: 10),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -362,7 +361,7 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 'Failed to load image',
-                                style: GoogleFonts.inter(fontSize: 10, color: Colors.red[600]),
+                                style: TextStyle(fontSize: 10, color: Colors.red[600]),
                               ),
                             ],
                           ),
@@ -389,12 +388,12 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
                       const SizedBox(height: 8),
                       Text(
                         'No image available',
-                        style: GoogleFonts.inter(fontSize: 12, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Add mapping in CloudinaryImageMap',
-                        style: GoogleFonts.inter(fontSize: 10, color: Colors.grey[500]),
+                        style: TextStyle(fontSize: 10, color: Colors.grey[500]),
                       ),
                     ],
                   ),
@@ -416,12 +415,12 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
             width: 100,
             child: Text(
               label,
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12),
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
             ),
           ),
           Text(
             value,
-            style: GoogleFonts.sourceCodePro(fontSize: 12),
+            style: TextStyle(fontSize: 12),
           ),
         ],
       ),
@@ -437,13 +436,13 @@ class _ImageDebugScreenState extends State<ImageDebugScreen> {
             width: 120,
             child: Text(
               label,
-              style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 12),
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.sourceCodePro(fontSize: 12),
+              style: TextStyle(fontSize: 12),
             ),
           ),
           if (canCopy)

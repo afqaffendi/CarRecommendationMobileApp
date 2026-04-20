@@ -158,3 +158,4 @@ class RankedCar {
     required this.rank,
   });
 }
+
