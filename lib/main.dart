@@ -3,17 +3,24 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/database_service.dart';
 import 'screens/lifestyle_input_screen.dart';
-import 'screens/database_management_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/image_gallery_screen.dart';
+import 'screens/image_debug_screen.dart';
+import 'package:car_recommendation_app/firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   // Initialize environment variables
   await dotenv.load(fileName: ".env");
-  
-  // Initialize database service
+
+  // Initialize app-level cache service
   await DatabaseService.initialize();
   
   runApp(const MyApp());
@@ -35,8 +42,6 @@ class MyApp extends StatelessWidget {
           onSecondary: Colors.white,
           surface: Colors.white,
           onSurface: Colors.black,
-          background: Color(0xFFFAFAFA),
-          onBackground: Colors.black,
         ),
         scaffoldBackgroundColor: const Color(0xFFFAFAFA),
         appBarTheme: AppBarTheme(
@@ -192,12 +197,7 @@ class HomeScreen extends StatelessWidget {
               width: double.infinity,
               child: TextButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const DatabaseManagementScreen(),
-                    ),
-                  );
+                  // TODO: Navigate to a new screen if needed, or remove this button
                 },
                 icon: const Icon(Icons.storage_rounded, size: 20),
                 label: Text(
@@ -265,6 +265,34 @@ class HomeScreen extends StatelessWidget {
                 ),
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.black54,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            
+            // Debug Image URLs Link (for troubleshooting)
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ImageDebugScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.bug_report_rounded, size: 20),
+                label: Text(
+                  'Debug Image URLs',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.orange.shade700,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),

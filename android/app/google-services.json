@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "596680793489",
+    "project_id": "carrecommendationapp-c6e94",
+    "storage_bucket": "carrecommendationapp-c6e94.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:596680793489:android:0579a2206fca4c40d8ce30",
+        "android_client_info": {
+          "package_name": "com.example.car_recommendation_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiw-N3qRGELbviKBtEs5viBmbA1WxzYCs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

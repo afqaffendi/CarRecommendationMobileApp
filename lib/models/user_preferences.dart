@@ -1,18 +1,13 @@
-import 'package:hive/hive.dart';
-
-part 'user_preferences.g.dart';
-
-@HiveType(typeId: 1)
-class UserPreferences extends HiveObject {
+class UserPreferences {
   // Lifestyle inputs
-  @HiveField(0) double budget;              // Max budget in MYR
-  @HiveField(1) String usageType;           // city, highway, both
-  @HiveField(2) String parkingSpace;        // compact, medium, large
+  double budget;              // Max budget in MYR
+  String usageType;           // city, highway, both
+  String parkingSpace;        // compact, medium, large
 
   // Preference weights (0.0 - 1.0)
-  @HiveField(3) double priceWeight;
-  @HiveField(4) double fuelEconomyWeight;
-  @HiveField(5) double safetyWeight;
+  double priceWeight;
+  double fuelEconomyWeight;
+  double safetyWeight;
 
   UserPreferences({
     this.budget = 100000,

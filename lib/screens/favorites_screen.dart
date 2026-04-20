@@ -4,7 +4,9 @@ import '../services/database_service.dart';
 import '../models/car.dart';
 
 class FavoritesScreen extends StatefulWidget {
-  const FavoritesScreen({super.key});
+  final List<Car>? favoriteCars;
+
+  const FavoritesScreen({super.key, this.favoriteCars});
 
   @override
   State<FavoritesScreen> createState() => _FavoritesScreenState();
@@ -26,7 +28,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     });
 
     try {
-      _favoriteCars = DatabaseService.getFavoriteCars();
+      _favoriteCars = widget.favoriteCars ?? DatabaseService.getFavoriteCars();
     } catch (e) {
       debugPrint('Error loading favorites: $e');
       _favoriteCars = [];
@@ -39,7 +41,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
 
   Future<void> _removeFromFavorites(Car car) async {
     try {
-      final carKey = '${car.brand}_${car.model}_${car.variant ?? 'base'}';
+      final carKey = DatabaseService.carKeyFromCar(car);
       await DatabaseService.removeFromFavorites(carKey);
       _loadFavorites();
       
@@ -243,8 +245,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 _buildSpecChip(Icons.local_gas_station_rounded, '${car.fuelEconomy}L/100km'),
                 _buildSpecChip(Icons.shield_rounded, '${car.safetyRating}/5 stars'),
                 _buildSpecChip(Icons.people_rounded, '${car.seats} seats'),
-                _buildSpecChip(Icons.route_rounded, car.usageType),
-                _buildSpecChip(Icons.local_parking_rounded, car.parkingSize),
+                _buildSpecChip(Icons.directions_car_rounded, car.type),
                 _buildSpecChip(Icons.speed_rounded, '${car.horsepower.toInt()}hp'),
               ],
             ),

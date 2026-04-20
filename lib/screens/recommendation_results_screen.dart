@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/car.dart';
 import '../models/user_preferences.dart';
-import '../services/car_data_loader.dart';
 import '../services/cbf_service.dart';
 import '../services/topsis_service.dart';
 import '../services/ai_explanation_service.dart';
-import '../services/database_service.dart';
+import '../services/firestore_service.dart';
 import '../widgets/car_image_widget.dart';
 import 'favorites_screen.dart';
 
@@ -28,6 +27,8 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
   bool _isExplaining = false;
   int _totalCars = 0;
   int _filteredCount = 0;
+  final FirestoreService _firestoreService = FirestoreService();
+  List<Car> _favoriteCars = [];
 
   @override
   void initState() {
@@ -39,14 +40,8 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
     setState(() => _isLoading = true);
 
     try {
-      // Load cars from cache or CSV
-      List<Car> allCars;
-      if (DatabaseService.hasCachedCars()) {
-        allCars = DatabaseService.getCachedCars();
-      } else {
-        allCars = await CarDataLoader.loadFromAsset('assets/cars.csv');
-        await DatabaseService.cacheCars(allCars);
-      }
+      // Load cars from Firestore
+      List<Car> allCars = await _firestoreService.getCars();
       _totalCars = allCars.length;
 
       // Stage 1: CBF Filtering
@@ -84,47 +79,37 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
     });
   }
 
+  bool _isFavorite(Car car) {
+    return _favoriteCars.any((favCar) => favCar.displayName == car.displayName);
+  }
+
   Future<void> _toggleFavorite(Car car) async {
-    final carKey = '${car.brand}_${car.model}_${car.variant ?? 'base'}';
-    try {
-      if (DatabaseService.isFavorite(carKey)) {
-        await DatabaseService.removeFromFavorites(carKey);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Removed ${car.displayName} from favorites',
-                style: GoogleFonts.inter(),
-              ),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-      } else {
-        await DatabaseService.addToFavorites(carKey);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Added ${car.displayName} to favorites',
-                style: GoogleFonts.inter(),
-              ),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      }
-      setState(() {}); // Refresh to update favorite icons
-    } catch (e) {
-      if (mounted) {
+    // This is a simplified favorite toggle. A more robust solution would use user accounts and a proper database service.
+    setState(() {
+      if (_isFavorite(car)) {
+        _favoriteCars.removeWhere((favCar) => favCar.displayName == car.displayName);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error updating favorites: $e', style: GoogleFonts.inter()),
-            backgroundColor: Colors.red,
+            content: Text(
+              'Removed ${car.displayName} from favorites',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      } else {
+        _favoriteCars.add(car);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Added ${car.displayName} to favorites',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.green,
           ),
         );
       }
-    }
+    });
   }
 
   @override
@@ -148,7 +133,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const FavoritesScreen(),
+                  builder: (context) => FavoritesScreen(favoriteCars: _favoriteCars),
                 ),
               );
             },
@@ -432,8 +417,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
   Widget _buildCarCard(RankedCar rankedCar) {
     final car = rankedCar.car;
     final isTopPick = rankedCar.rank == 1;
-    final carKey = '${car.brand}_${car.model}_${car.variant ?? 'base'}';
-    final isFavorited = DatabaseService.isFavorite(carKey);
+    final isFavorited = _isFavorite(car);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -505,8 +489,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
                 _buildSpecChip(Icons.local_gas_station_rounded, '${car.fuelEconomy}L/100km'),
                 _buildSpecChip(Icons.shield_rounded, '${car.safetyRating}/5'),
                 _buildSpecChip(Icons.people_rounded, '${car.seats} seats'),
-                _buildSpecChip(Icons.route_rounded, car.usageType),
-                _buildSpecChip(Icons.local_parking_rounded, car.parkingSize),
+                _buildSpecChip(Icons.directions_car_rounded, car.type),
               ],
             ),
           ),

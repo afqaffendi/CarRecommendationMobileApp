@@ -6,7 +6,7 @@ import '../services/simple_cloudinary_service.dart';
 import '../widgets/car_image_widget.dart';
 
 class ImageGalleryScreen extends StatefulWidget {
-  const ImageGalleryScreen({Key? key}) : super(key: key);
+  const ImageGalleryScreen({super.key});
 
   @override
   State<ImageGalleryScreen> createState() => _ImageGalleryScreenState();
@@ -139,7 +139,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
     );
   }
 
-  void _showUrlsDialog(Car car, Map<String, String> urls) {
+  void _showUrlsDialog(Car car, Map<String, String?> urls) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -179,12 +179,15 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                     ),
                     const SizedBox(height: 4),
                     SelectableText(
-                      entry.value,
-                      style: GoogleFonts.sourceCodePro(fontSize: 10),
+                      entry.value ?? 'No image available',
+                      style: GoogleFonts.sourceCodePro(
+                        fontSize: 10,
+                        color: entry.value != null ? Colors.black : Colors.red,
+                      ),
                     ),
                   ],
                 ),
-              )).toList(),
+              )),
             ],
           ),
         ),

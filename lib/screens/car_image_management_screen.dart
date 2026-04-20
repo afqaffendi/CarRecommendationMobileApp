@@ -8,7 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 class CarImageManagementScreen extends StatefulWidget {
   final Car? selectedCar;
 
-  const CarImageManagementScreen({Key? key, this.selectedCar}) : super(key: key);
+  const CarImageManagementScreen({super.key, this.selectedCar});
 
   @override
   State<CarImageManagementScreen> createState() => _CarImageManagementScreenState();

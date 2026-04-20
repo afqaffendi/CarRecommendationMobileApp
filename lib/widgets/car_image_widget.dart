@@ -11,13 +11,13 @@ class CarImageWidget extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const CarImageWidget({
-    Key? key,
+    super.key,
     required this.car,
     this.width = 400,
     this.height = 300,
     this.size = 'medium',
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,12 +25,28 @@ class CarImageWidget extends StatelessWidget {
       return _buildErrorWidget('Cloudinary not configured');
     }
 
-    String imageUrl;
+    String? imageUrl;
     try {
       final urls = CloudinaryImageService.getCarImageUrls(car);
-      imageUrl = urls[size] ?? urls['medium']!;
+      imageUrl = urls[size] ?? urls['medium'];
     } catch (e) {
       return _buildErrorWidget('Error generating image URL');
+    }
+
+    // If no image URL available, show fallback
+    if (imageUrl == null) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          borderRadius: borderRadius ?? BorderRadius.circular(8),
+          color: Colors.grey[200],
+        ),
+        child: ClipRRect(
+          borderRadius: borderRadius ?? BorderRadius.circular(8),
+          child: _buildFallbackWidget(),
+        ),
+      );
     }
 
     return Container(

@@ -52,7 +52,6 @@ class ImageManagementService {
         imageFile: imageFile,
         carBrand: car.brand,
         carModel: car.model,
-        variant: car.variant,
       );
 
       if (response != null && response.secureUrl.isNotEmpty) {
@@ -66,14 +65,13 @@ class ImageManagementService {
           bootSpace: car.bootSpace,
           safetyRating: car.safetyRating,
           horsepower: car.horsepower,
-          usageType: car.usageType,
-          parkingSize: car.parkingSize,
+          type: car.type,
+          year: car.year,
           imageUrl: response.secureUrl,
-          variant: car.variant,
         );
 
         // Save updated car to database
-        await DatabaseService.updateCar(car.key, updatedCar);
+        await DatabaseService.updateCar(DatabaseService.carKeyFromCar(car), updatedCar);
         return true;
       }
       
@@ -130,13 +128,12 @@ class ImageManagementService {
         bootSpace: car.bootSpace,
         safetyRating: car.safetyRating,
         horsepower: car.horsepower,
-        usageType: car.usageType,
-        parkingSize: car.parkingSize,
+        type: car.type,
+        year: car.year,
         imageUrl: null,
-        variant: car.variant,
       );
 
-      await DatabaseService.updateCar(car.key, updatedCar);
+      await DatabaseService.updateCar(DatabaseService.carKeyFromCar(car), updatedCar);
       return true;
     } catch (e) {
       print('Error removing car image: $e');
