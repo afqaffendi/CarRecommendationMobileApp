@@ -2,126 +2,91 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/car.dart';
 import 'cloudinary_image_map.dart';
 
+/// Builds Cloudinary image URLs for car images.
+///
+/// Primary strategy — convention-based public ID derived from brand + model.
+/// Naming rule: lowercase the brand and model, strip all non-alphanumeric chars,
+/// join with underscore, prefix with the folder name.
+///
+///   Perodua Myvi 1.5 X  →  car-images/perodua_myvi15x
+///   Honda Civic 1.5 V   →  car-images/honda_civic15v
+///
+/// To add a new car image: upload to Cloudinary with that public ID — no code change needed.
+///
+/// Fallback strategy — the legacy CloudinaryImageMap, which covers images that were
+/// already uploaded with arbitrary public IDs (with random suffixes).
 class CloudinaryImageService {
-  static const String baseUrl = 'https://res.cloudinary.com';
-  
-  // Generate Cloudinary URL for a car image using actual uploaded public IDs
-  static String? getCarImageUrl(Car car, {int width = 400, int height = 300, String quality = 'auto'}) {
-    final cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'];
-    
-    if (cloudName == null) {
-      throw Exception('CLOUDINARY_CLOUD_NAME not found in environment variables');
+  static const String _baseUrl = 'https://res.cloudinary.com';
+  static const String _folder = 'car-images';
+
+  static String get _cloudName =>
+      dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '';
+
+  static bool get isConfigured => _cloudName.isNotEmpty;
+
+  /// Returns the best available image URL for [car] at the given [size].
+  static String? getCarImageUrl(
+    Car car, {
+    int width = 400,
+    int height = 300,
+    String quality = 'auto',
+  }) {
+    if (!isConfigured) return null;
+
+    // Strategy 1: convention-based public ID (new uploads should use this)
+    final conventionId = _conventionPublicId(car);
+    final conventionUrl = _buildUrl(conventionId, width, height, quality);
+
+    // Strategy 2: legacy map (covers existing uploads with random suffixes)
+    final legacyId = CloudinaryImageMap.getPublicId(car.brand, car.model, car.variant);
+    if (legacyId != null) {
+      final format = CloudinaryImageMap.getImageFormat(legacyId);
+      final legacyUrl = '$_baseUrl/$_cloudName/image/upload/'
+          'w_$width,h_$height,c_fill,q_$quality,f_auto/$legacyId.$format';
+      // Return legacy URL — it is known to exist since it came from the map.
+      return legacyUrl;
     }
-    
-    // Get actual public ID from the mapping
-    final publicId = CloudinaryImageMap.getPublicId(car.brand, car.model, car.variant);
-    
-    if (publicId == null) {
-      return null; // No image available for this car
-    }
-    
-    // Get the correct image format
-    final format = CloudinaryImageMap.getImageFormat(publicId);
-    
-    // Generate Cloudinary URL with transformations
-    final transformations = 'w_$width,h_$height,c_fill,q_$quality,f_auto';
-    
-    return '$baseUrl/$cloudName/image/upload/$transformations/$publicId.$format';
+
+    // Return convention URL — the widget will show the car icon if it 404s.
+    return conventionUrl;
   }
-  
-  // Generate different sizes for different use cases
+
+  /// Returns thumbnail / medium / large / full size URLs.
   static Map<String, String?> getCarImageUrls(Car car) {
-    final baseUrl = getCarImageUrl(car);
-    
-    if (baseUrl == null) {
-      return {
-        'thumbnail': null,
-        'medium': null,
-        'large': null,
-        'full': null,
-      };
-    }
-    
     return {
       'thumbnail': getCarImageUrl(car, width: 200, height: 150),
-      'medium': getCarImageUrl(car, width: 400, height: 300),
-      'large': getCarImageUrl(car, width: 800, height: 600),
-      'full': getCarImageUrl(car, width: 1200, height: 800),
+      'medium':    getCarImageUrl(car, width: 400, height: 300),
+      'large':     getCarImageUrl(car, width: 800, height: 600),
+      'full':      getCarImageUrl(car, width: 1200, height: 800),
     };
   }
-  
-  // Check if car has an image available
+
   static bool hasImage(Car car) {
     return CloudinaryImageMap.hasImage(car.brand, car.model, car.variant);
   }
-  
-  // Generate consistent public ID from car data
-  static String generatePublicId(Car car) {
-    final brand = car.brand.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-    final model = car.model.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-    final variant = car.variant?.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '') ?? '';
-    
-    // Create consistent naming: brand_model_variant or brand_model
-    if (variant.isNotEmpty) {
-      return '${brand}_${model}_$variant';
-    } else {
-      return '${brand}_$model';
-    }
+
+  // ── helpers ────────────────────────────────────────────────────────────────
+
+  /// Builds a Cloudinary URL for [publicId] with transformation params.
+  static String _buildUrl(String publicId, int w, int h, String q) {
+    return '$_baseUrl/$_cloudName/image/upload/w_$w,h_$h,c_fill,q_$q,f_auto/$publicId';
   }
 
-  // Alternative naming patterns you might have used in Cloudinary
-  static List<String> generateAlternativePublicIds(Car car) {
-    final brand = car.brand.toLowerCase();
-    final model = car.model.toLowerCase();
-    final variant = car.variant?.toLowerCase() ?? '';
-    
-    List<String> alternatives = [];
-    
-    // Pattern 1: Remove all non-alphanumeric (current)
-    alternatives.add(generatePublicId(car));
-    
-    // Pattern 2: Replace spaces with underscores, keep periods as underscores
-    String brandClean = brand.replaceAll(RegExp(r'[^a-z0-9.]'), '_').replaceAll('.', '_');
-    String modelClean = model.replaceAll(RegExp(r'[^a-z0-9.]'), '_').replaceAll('.', '_');
-    String variantClean = variant.replaceAll(RegExp(r'[^a-z0-9.]'), '_').replaceAll('.', '_');
-    
-    if (variantClean.isNotEmpty) {
-      alternatives.add('${brandClean}_${modelClean}_$variantClean');
-    } else {
-      alternatives.add('${brandClean}_$modelClean');
-    }
-    
-    // Pattern 3: Simple brand_model only (ignoring variant)
-    alternatives.add('${brand.replaceAll(RegExp(r'[^a-z0-9]'), '')}_${model.replaceAll(RegExp(r'[^a-z0-9]'), '')}');
-    
-    // Pattern 4: Just the brand and first word of model
-    String firstModelWord = model.split(' ').first.replaceAll(RegExp(r'[^a-z0-9]'), '');
-    alternatives.add('${brand.replaceAll(RegExp(r'[^a-z0-9]'), '')}_$firstModelWord');
-    
-    // Remove duplicates
-    return alternatives.toSet().toList();
+  /// Derives a predictable public ID from the car's brand + full model string.
+  /// Upload your images to Cloudinary using this exact ID to avoid map maintenance.
+  static String _conventionPublicId(Car car) {
+    final brand = _clean(car.brand);
+    final model = _clean(car.model);
+    return '$_folder/${brand}_$model';
   }
 
-  // Try multiple URL patterns to find working images
-  static List<String> getCarImageUrlAlternatives(Car car, {int width = 400, int height = 300, String quality = 'auto'}) {
-    final cloudName = dotenv.env['CLOUDINARY_CLOUD_NAME'];
-    if (cloudName == null) return [];
-    
-    final transformations = 'w_$width,h_$height,c_fill,q_$quality,f_auto';
-    final alternatives = generateAlternativePublicIds(car);
-    
-    return alternatives.map((publicId) => 
-      '$baseUrl/$cloudName/image/upload/$transformations/$publicId.jpg'
-    ).toList();
-  }
-  
-  // Check if Cloudinary is properly configured
-  static bool get isConfigured {
-    return dotenv.env['CLOUDINARY_CLOUD_NAME'] != null;
-  }
-  
-  // Get placeholder image URL for missing images
-  static String getPlaceholderImageUrl({int width = 400, int height = 300}) {
-    return 'https://via.placeholder.com/${width}x$height/f0f0f0/999999?text=Car+Image';
+  static String _clean(String s) =>
+      s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+  /// Helper — call this to find out what public ID to use when uploading a car image.
+  static String conventionPublicIdFor(String brand, String model) {
+    final b = brand.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    final m = model.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    return '$_folder/${b}_$m';
   }
 }

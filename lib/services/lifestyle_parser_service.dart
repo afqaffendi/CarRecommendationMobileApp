@@ -1,14 +1,15 @@
 import 'dart:convert';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import '../models/user_preferences.dart';
 
-const String _apiKey = 'AIzaSyCNGkdzg4FL06QxfmiescIJD16WBhI3GNw';
+String get _groqKey => dotenv.env['GROQ_API_KEY'] ?? '';
+const _groqUrl = 'https://api.groq.com/openai/v1/chat/completions';
+const _groqModel = 'llama-3.1-8b-instant';
 
-/// AI-powered lifestyle input parser
-/// Understands ANY natural language and extracts car preferences
+/// AI-powered lifestyle input parser using Groq (free, no billing required).
+/// Understands ANY natural language and extracts car preferences.
 class LifestyleParserService {
-  late final GenerativeModel _model;
-
   static final Map<RegExp, String> _slangRules = {
     RegExp(r'\bnk\b', caseSensitive: false): 'nak',
     RegExp(r'\bx\b', caseSensitive: false): 'tak',
@@ -32,86 +33,80 @@ class LifestyleParserService {
     RegExp(r'\brm\s*(\d+)k\b', caseSensitive: false): 'RM \$1 000',
   };
 
-  LifestyleParserService() {
-    _model = GenerativeModel(
-      model: 'gemini-2.0-flash',
-      apiKey: _apiKey,
-    );
-  }
-
-  /// Parse ANY free-form input into structured preferences
-  /// AI will interpret whatever the user says and make reasonable assumptions
   Future<ParsedLifestyle> parseLifestyleInput(String userInput) async {
     final normalizedInput = _normalizeSlang(userInput);
     final hasBudgetConstraint = _hasBudgetIntent(normalizedInput.toLowerCase());
 
     final prompt = '''
-You are an intelligent car recommendation assistant in Malaysia. Your job is to understand what the user wants and extract car buying preferences from ANY input they give you.
+You are an intelligent car recommendation assistant in Malaysia. Extract car buying preferences from the user's input.
 
 User said: "$userInput"
-Normalized hint: "$normalizedInput"
+Normalized: "$normalizedInput"
 
-IMPORTANT: You must ALWAYS extract preferences, even if the input is vague, short, or unusual. Make intelligent assumptions based on context clues. Never say you cannot understand.
+ALWAYS extract preferences even if the input is vague. Make intelligent assumptions.
 
-Interpret the user's words creatively:
-- "cheap" / "murah" / "budget" / "jimat" / "affordable" → lower budget, price is important
-- "mahal" / "premium" / "luxury" / "high-end" / "atas" → higher budget, price is less important
-- "save petrol" / "fuel" / "jimat minyak" / "ekonomi" → fuel economy is important
-- "safe" / "family" / "keselamatan" / "anak-anak" / "kids" → safety is important
-- "KL" / "city" / "bandar" / "traffic" / "jam" / "commute" / "kerja" → city usage
-- "balik kampung" / "highway" / "jalan jauh" / "outstation" / "travel" → highway usage
-- "SUV" / "sedan" / "hatchback" / "mpv" / "truck" / "van" → preferred car type
-- "EV" / "electric" / "elektrik" → prefers EV
-- "petrol" / "gasoline" / "bensin" / "minyak" → prefers Petrol
-- "hybrid" / "phev" / "hev" / "e:hev" / "ehev" → prefers Hybrid
-- Numbers like "50k", "80,000", "100 ribu", "RM70k" → budget amount
-- "student" / "pelajar" / "fresh grad" / "first car" → lower budget, fuel efficient
-- "family" / "keluarga" / "5 orang" / "anak" → safety important, more seats
-- "sporty" / "fast" / "laju" / "power" → performance preference
+Key interpretations:
+- "cheap/murah/budget/jimat/affordable" → lower budget, price important
+- "mahal/premium/luxury/atas" → higher budget (220000+), price not important
+- "jimat minyak/fuel economy/efficient" → fuel economy important
+- "safe/family/keluarga/anak-anak/kids" → safety important
+- "KL/city/bandar/traffic/commute/kerja" → city usage
+- "kampung/highway/outstation/travel/jauh" → highway usage
+- "SUV/sedan/hatchback/mpv/truck/van" → car type
+- "EV/electric/elektrik" → ev fuel
+- "petrol/minyak/ron95" → petrol fuel
+- "hybrid/phev/hev" → hybrid fuel
+- Numbers "50k/rm80000/100 ribu" → budget
+- "student/fresh grad/first car" → budget ~50000, fuel economy important
+- "family/keluarga" → safety important, more seats needed
 
-If user mentions specific car brands or models, note them in detectedNeeds.
-If input is very short or vague, use sensible Malaysian middle-class defaults.
-
-Return a JSON object:
+Return ONLY valid JSON, no other text:
 {
-  "budget": <number in MYR - extract from text or estimate: student=50000, average=100000, comfortable=150000>,
+  "budget": <number in MYR>,
   "usageType": "<city|highway|both>",
   "carType": "<any|sedan|suv|mpv|hatchback|truck|van>",
   "fuelType": "<any|petrol|ev|hybrid>",
   "priceImportance": <0.0-1.0>,
   "fuelImportance": <0.0-1.0>,
   "safetyImportance": <0.0-1.0>,
-  "detectedNeeds": ["<list ALL things you detected from their input>"],
-  "summary": "<friendly summary in English of what they're looking for>",
-  "confidence": "<high|medium|low> - how confident you are in understanding them"
+  "detectedNeeds": ["<list of detected needs>"],
+  "summary": "<friendly English summary of what they want>",
+  "confidence": "<high|medium|low>"
 }
-
-Examples:
-- "nak kereta" → budget: 80000, both usage, any type, balanced priorities
-- "murah je" → budget: 50000, city usage, any type, price very important
-- "SUV untuk family" → budget: 120000, both usage, suv, safety important
-- "kerja KL everyday" → budget: 80000, city usage, hatchback/sedan, fuel important
-- "nak petrol bukan EV" → fuelType: petrol
-- "mahu EV" → fuelType: ev
-- "nak hybrid" → fuelType: hybrid
-- "kete mahal dan pakai petrol" → budget: 220000+, fuelType: petrol, priceImportance low
-
-Return ONLY valid JSON, no explanation.
 ''';
 
     try {
-      final response = await _model.generateContent([Content.text(prompt)]);
-      final jsonText = response.text ?? '{}';
-      
-      // Clean up response (remove markdown code blocks if present)
-      final cleanJson = jsonText
-          .replaceAll('```json', '')
-          .replaceAll('```', '')
-          .trim();
-      
-      final parsed = json.decode(cleanJson) as Map<String, dynamic>;
-      
-      final parsedLifestyle = ParsedLifestyle(
+      final response = await http.post(
+        Uri.parse(_groqUrl),
+        headers: {
+          'Authorization': 'Bearer $_groqKey',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'model': _groqModel,
+          'messages': [
+            {
+              'role': 'system',
+              'content': 'You are a car preference extractor. Always respond with valid JSON only.',
+            },
+            {'role': 'user', 'content': prompt},
+          ],
+          'response_format': {'type': 'json_object'},
+          'temperature': 0.2,
+          'max_tokens': 512,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        print('LifestyleParser: Groq error ${response.statusCode}');
+        return _fallbackParse(normalizedInput, rawInput: userInput);
+      }
+
+      final body = jsonDecode(response.body);
+      final jsonText = body['choices']?[0]?['message']?['content'] as String? ?? '{}';
+      final parsed = jsonDecode(jsonText) as Map<String, dynamic>;
+
+      final result = ParsedLifestyle(
         budget: (parsed['budget'] as num?)?.toDouble() ?? 80000,
         hasBudgetConstraint: hasBudgetConstraint,
         usageType: parsed['usageType'] as String? ?? 'both',
@@ -121,16 +116,17 @@ Return ONLY valid JSON, no explanation.
         fuelImportance: (parsed['fuelImportance'] as num?)?.toDouble() ?? 0.5,
         safetyImportance: (parsed['safetyImportance'] as num?)?.toDouble() ?? 0.5,
         detectedNeeds: (parsed['detectedNeeds'] as List<dynamic>?)
-            ?.map((e) => e.toString())
-            .toList() ?? ['General car search'],
+                ?.map((e) => e.toString())
+                .toList() ??
+            ['General car search'],
         summary: parsed['summary'] as String? ?? 'Looking for a suitable car in Malaysia',
         confidence: parsed['confidence'] as String? ?? 'medium',
         rawInput: userInput,
       );
 
-      return _applyIntentHeuristics(parsedLifestyle, normalizedInput);
+      return _applyIntentHeuristics(result, normalizedInput);
     } catch (e) {
-      // Even on error, return reasonable defaults based on simple keyword detection
+      print('LifestyleParser: Error - $e');
       return _fallbackParse(normalizedInput, rawInput: userInput);
     }
   }
@@ -140,20 +136,15 @@ Return ONLY valid JSON, no explanation.
     for (final entry in _slangRules.entries) {
       normalized = normalized.replaceAll(entry.key, entry.value);
     }
-
-    // Normalize separators and repeated spaces.
     normalized = normalized.replaceAll(RegExp(r'[_\-\/]+'), ' ');
     normalized = normalized.replaceAll(RegExp(r'\s+'), ' ').trim();
     return normalized;
   }
 
-  /// Fallback parser using simple keyword detection
-  /// This ensures we ALWAYS return something useful
   ParsedLifestyle _fallbackParse(String input, {String? rawInput}) {
     final lower = input.toLowerCase();
     final hasBudgetConstraint = _hasBudgetIntent(lower);
-    
-    // Budget detection
+
     double budget = 80000;
     final budgetMatch = RegExp(r'(\d+)\s*k|rm\s*(\d+)|(\d{5,})').firstMatch(lower);
     if (budgetMatch != null) {
@@ -166,63 +157,40 @@ Return ONLY valid JSON, no explanation.
     if (lower.contains('cheap') || lower.contains('murah') || lower.contains('student')) {
       budget = budget > 60000 ? 60000 : budget;
     }
-    
-    // Usage type detection
+
     String usageType = 'both';
-    if (lower.contains('city') || lower.contains('kl') || lower.contains('traffic') || 
+    if (lower.contains('city') || lower.contains('kl') || lower.contains('traffic') ||
         lower.contains('bandar') || lower.contains('commute')) {
       usageType = 'city';
-    } else if (lower.contains('highway') || lower.contains('kampung') || 
-               lower.contains('outstation') || lower.contains('travel')) {
+    } else if (lower.contains('highway') || lower.contains('kampung') ||
+        lower.contains('outstation') || lower.contains('travel')) {
       usageType = 'highway';
     }
-    
-    // Car type detection
+
     String carType = 'any';
-    if (lower.contains('suv')) {
-      carType = 'suv';
-    } else if (lower.contains('sedan')) {
-      carType = 'sedan';
-    } else if (lower.contains('hatchback')) {
-      carType = 'hatchback';
-    } else if (lower.contains('mpv')) {
-      carType = 'mpv';
-    } else if (lower.contains('truck')) {
-      carType = 'truck';
-    } else if (lower.contains('van')) {
-      carType = 'van';
-    }
+    if (lower.contains('suv')) carType = 'suv';
+    else if (lower.contains('sedan')) carType = 'sedan';
+    else if (lower.contains('hatchback')) carType = 'hatchback';
+    else if (lower.contains('mpv')) carType = 'mpv';
+    else if (lower.contains('truck')) carType = 'truck';
+    else if (lower.contains('van')) carType = 'van';
 
-    // Fuel type detection (respects negation phrases like "taknak ev")
     final fuelType = _resolveFuelTypeFromText('any', lower);
-    
-    // Priorities
+
     double price = 0.5, fuel = 0.5, safety = 0.5;
-    if (lower.contains('cheap') || lower.contains('murah') || lower.contains('budget') || 
-        lower.contains('jimat') || lower.contains('affordable')) {
-      price = 0.9;
-    }
-    if (lower.contains('fuel') || lower.contains('petrol') || lower.contains('minyak') || 
-        lower.contains('economy') || lower.contains('efficient')) {
-      fuel = 0.9;
-    }
-    if (lower.contains('safe') || lower.contains('family') || lower.contains('keluarga') || 
-        lower.contains('anak') || lower.contains('kid')) {
-      safety = 0.9;
+    if (lower.contains('cheap') || lower.contains('murah') || lower.contains('budget') ||
+        lower.contains('jimat') || lower.contains('affordable')) price = 0.9;
+    if (lower.contains('fuel') || lower.contains('petrol') || lower.contains('minyak') ||
+        lower.contains('economy') || lower.contains('efficient')) fuel = 0.9;
+    if (lower.contains('safe') || lower.contains('family') || lower.contains('keluarga') ||
+        lower.contains('anak') || lower.contains('kid')) safety = 0.9;
+    if (lower.contains('mahal') || lower.contains('premium') || lower.contains('luxury') ||
+        lower.contains('high-end') || lower.contains('atas')) {
+      if (budget < 220000) budget = 220000;
+      price = 0.15;
     }
 
-    // Expensive / premium intent
-    if (lower.contains('mahal') ||
-        lower.contains('premium') ||
-        lower.contains('luxury') ||
-        lower.contains('high-end') ||
-        lower.contains('atas')) {
-      if (budget < 220000) budget = 220000;
-      price = 0.15; // low priority on cheapness
-    }
-    
-    // Detect needs from keywords
-    List<String> needs = [];
+    final needs = <String>[];
     if (lower.contains('suv')) needs.add('SUV preference');
     if (lower.contains('sedan')) needs.add('Sedan preference');
     if (lower.contains('family')) needs.add('Family car');
@@ -232,7 +200,7 @@ Return ONLY valid JSON, no explanation.
     if (lower.contains('honda')) needs.add('Honda brand interest');
     if (lower.contains('toyota')) needs.add('Toyota brand interest');
     if (needs.isEmpty) needs.add('General car search');
-    
+
     return ParsedLifestyle(
       budget: budget,
       hasBudgetConstraint: hasBudgetConstraint,
@@ -244,8 +212,8 @@ Return ONLY valid JSON, no explanation.
       safetyImportance: safety,
       detectedNeeds: needs,
       summary: hasBudgetConstraint
-          ? 'Based on your input, looking for a car around RM${budget.toStringAsFixed(0)}'
-          : 'Based on your input, no strict budget was specified',
+          ? 'Looking for a car around RM${budget.toStringAsFixed(0)}'
+          : 'Looking for a car without a strict budget',
       confidence: 'medium',
       rawInput: rawInput ?? input,
     );
@@ -259,17 +227,13 @@ Return ONLY valid JSON, no explanation.
     var priceImportance = parsed.priceImportance;
     var fuelType = _normalizeFuelType(parsed.fuelType);
 
-    if (lower.contains('mahal') ||
-        lower.contains('premium') ||
-        lower.contains('luxury') ||
-        lower.contains('high-end') ||
-        lower.contains('atas')) {
+    if (lower.contains('mahal') || lower.contains('premium') || lower.contains('luxury') ||
+        lower.contains('high-end') || lower.contains('atas')) {
       if (budget < 220000) budget = 220000;
       if (priceImportance > 0.2) priceImportance = 0.2;
       hasBudgetConstraint = true;
     }
 
-    // Hard override from explicit user wording so LLM ambiguity cannot leak EV results.
     fuelType = _resolveFuelTypeFromText(fuelType, lower);
 
     return ParsedLifestyle(
@@ -288,7 +252,6 @@ Return ONLY valid JSON, no explanation.
     );
   }
 
-  /// Convert parsed lifestyle to UserPreferences
   UserPreferences toUserPreferences(ParsedLifestyle parsed) {
     return UserPreferences(
       budget: parsed.budget,
@@ -325,39 +288,23 @@ Return ONLY valid JSON, no explanation.
       r'\b(tak\s*nak|taknak|x\s*nak|tak\s*mahu|takmahu|tak\s*mau|bukan|no|not)\s*(hybrid|phev|hev|e:hev|ehev)\b',
     ).hasMatch(lowerInput);
 
-    if (rejectEv) {
-      if (hasHybrid && !hasPetrol) return 'hybrid';
-      return 'petrol';
-    }
-    if (rejectPetrol) {
-      if (hasHybrid && !hasEv) return 'hybrid';
-      return 'ev';
-    }
-    if (rejectHybrid) {
-      if (hasEv && !hasPetrol) return 'ev';
-      return 'petrol';
-    }
-
+    if (rejectEv) return (hasHybrid && !hasPetrol) ? 'hybrid' : 'petrol';
+    if (rejectPetrol) return (hasHybrid && !hasEv) ? 'hybrid' : 'ev';
+    if (rejectHybrid) return (hasEv && !hasPetrol) ? 'ev' : 'petrol';
     if (hasHybrid && !hasPetrol && !hasEv) return 'hybrid';
-
     if (hasPetrol && !hasEv) return 'petrol';
     if (hasEv && !hasPetrol && !hasHybrid) return 'ev';
-
     return _normalizeFuelType(currentFuelType);
   }
 
   bool _hasBudgetIntent(String lowerInput) {
-    if (RegExp(r'\b(rm\s*\d+|\d+\s*k|\d+\s*ribu|\d{5,})\b').hasMatch(lowerInput)) {
-      return true;
-    }
-
+    if (RegExp(r'\b(rm\s*\d+|\d+\s*k|\d+\s*ribu|\d{5,})\b').hasMatch(lowerInput)) return true;
     return RegExp(
       r'\b(budget|bajet|murah|cheap|affordable|jimat|mahal|premium|luxury|high-end|atas|student|pelajar|fresh\s*grad|first\s*car|bawah|under|below)\b',
     ).hasMatch(lowerInput);
   }
 }
 
-/// Structured result from lifestyle parsing
 class ParsedLifestyle {
   final double budget;
   final bool hasBudgetConstraint;
@@ -387,4 +334,3 @@ class ParsedLifestyle {
     required this.rawInput,
   });
 }
-

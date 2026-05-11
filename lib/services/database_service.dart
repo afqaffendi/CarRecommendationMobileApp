@@ -13,6 +13,11 @@ class DatabaseService {
 
   static bool get isInitialized => _isInitialized;
 
+  /// Marks the service ready without blocking on a network fetch.
+  static void initializeSync() {
+    _isInitialized = true;
+  }
+
   static Future<void> initialize() async {
     if (_isInitialized) return;
     _isInitialized = true;

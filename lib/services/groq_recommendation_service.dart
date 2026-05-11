@@ -1,18 +1,21 @@
 import 'dart:convert';
-import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:http/http.dart' as http;
 import '../models/car.dart';
 import '../models/user_preferences.dart';
 import 'cbf_service.dart';
 
-class GeminiRecommendationService {
+/// Uses the Groq API (free tier, no billing required) as a reliable
+/// alternative to Gemini for AI-powered car recommendations.
+/// Get a free key at console.groq.com
+class GroqRecommendationService {
   final String apiKey;
-  static const String _modelName = 'gemini-2.0-flash';
+  static const String _apiUrl = 'https://api.groq.com/openai/v1/chat/completions';
+  static const String _model = 'llama-3.1-8b-instant';
   static const int _maxCandidates = 30;
 
-  /// Exposed so the UI can show the exact failure reason.
   static String lastError = '';
 
-  GeminiRecommendationService({required this.apiKey});
+  GroqRecommendationService({required this.apiKey});
 
   Future<List<Car>> getRecommendations({
     required UserPreferences preferences,
@@ -20,11 +23,14 @@ class GeminiRecommendationService {
   }) async {
     lastError = '';
 
-    // Stage 1: Use CBF to narrow down to relevant candidates.
-    List<Car> candidates = CBFService.filterCars(allCars, preferences);
+    if (apiKey.isEmpty) {
+      lastError = 'GROQ_API_KEY is missing from .env — get a free key at console.groq.com';
+      print('GroqRec: $lastError');
+      return [];
+    }
 
-    // If CBF filtered everything out, relax to budget-only so Gemini has
-    // something to work with.
+    // Stage 1: CBF pre-filter — keeps prompt small and focused.
+    List<Car> candidates = CBFService.filterCars(allCars, preferences);
     if (candidates.isEmpty) {
       candidates = preferences.hasBudgetConstraint
           ? allCars.where((c) => c.price <= preferences.budget * 1.2).toList()
@@ -38,11 +44,9 @@ class GeminiRecommendationService {
 
     if (candidates.isEmpty) {
       lastError = 'No candidate cars found after filtering.';
-      print('GeminiRec: $lastError');
       return [];
     }
 
-    // Compact payload — only the fields Gemini needs.
     final candidateData = candidates.map((car) => {
       'brand': car.brand,
       'model': car.model,
@@ -53,50 +57,49 @@ class GeminiRecommendationService {
       'seats': car.seats,
       'safetyRating': car.safetyRating,
       'horsepower': car.horsepower,
-      'usageType': car.usageType,
     }).toList();
 
-    if (apiKey.isEmpty) {
-      lastError = 'GEMINI_API_KEY is missing from .env — run flutter clean then flutter run.';
-      print('GeminiRec: $lastError');
-      return [];
-    }
-
-    final model = GenerativeModel(
-      model: _modelName,
-      apiKey: apiKey,
-      generationConfig: GenerationConfig(
-        temperature: 0.1,
-        maxOutputTokens: 1024,
-      ),
-    );
-
-    final prompt = _buildPrompt(preferences, candidateData);
+    final systemPrompt = _buildSystemPrompt();
+    final userPrompt = _buildUserPrompt(preferences, candidateData);
 
     try {
-      final response = await model.generateContent([Content.text(prompt)]);
-      final rawText = response.text;
+      final response = await http.post(
+        Uri.parse(_apiUrl),
+        headers: {
+          'Authorization': 'Bearer $apiKey',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'model': _model,
+          'messages': [
+            {'role': 'system', 'content': systemPrompt},
+            {'role': 'user', 'content': userPrompt},
+          ],
+          'response_format': {'type': 'json_object'},
+          'temperature': 0.1,
+          'max_tokens': 1024,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        lastError = 'Groq API error ${response.statusCode}: ${response.body}';
+        print('GroqRec: $lastError');
+        return [];
+      }
+
+      final body = jsonDecode(response.body);
+      final rawText = body['choices']?[0]?['message']?['content'] as String?;
 
       if (rawText == null || rawText.trim().isEmpty) {
-        lastError = 'Gemini returned an empty response. Check API key and quota.';
-        print('GeminiRec: $lastError');
+        lastError = 'Groq returned an empty response.';
         return [];
       }
 
-      // Extract JSON — strips markdown code fences if present.
-      final jsonText = _extractJson(rawText);
-      if (jsonText == null) {
-        lastError = 'Could not find JSON in Gemini response:\n$rawText';
-        print('GeminiRec: $lastError');
-        return [];
-      }
-
-      final Map<String, dynamic> parsed = jsonDecode(jsonText);
+      final Map<String, dynamic> parsed = jsonDecode(rawText);
       final rawList = parsed['recommendations'] as List? ?? [];
 
       if (rawList.isEmpty) {
-        lastError = 'Gemini returned an empty recommendations list.';
-        print('GeminiRec: $lastError');
+        lastError = 'Groq returned an empty recommendations list.';
         return [];
       }
 
@@ -112,47 +115,27 @@ class GeminiRecommendationService {
         } else if (item is String) {
           car = _findByDisplayName(item, candidates);
         }
-
         if (car != null && !result.any((c) => c.key == car!.key)) {
           result.add(car);
-        } else if (car == null) {
-          print('GeminiRec: No match for "$item"');
         }
       }
 
       if (result.isEmpty) {
-        lastError = 'Gemini responded but none of its car names matched the dataset.';
-        print('GeminiRec: $lastError\nGemini said: $rawText');
+        lastError = 'Groq responded but no car names matched the dataset.';
+        print('GroqRec: $lastError\nGroq said: $rawText');
       }
 
       return result;
     } catch (e) {
       lastError = 'API error: $e';
-      print('GeminiRec: $lastError');
+      print('GroqRec: $lastError');
       return [];
     }
   }
 
-  /// Extracts the first JSON object from a string (handles markdown fences).
-  String? _extractJson(String text) {
-    // Try stripping markdown fences first.
-    final stripped = text
-        .replaceAll(RegExp(r'```json\s*', caseSensitive: false), '')
-        .replaceAll(RegExp(r'```\s*'), '')
-        .trim();
-
-    // Find the outermost { ... } block.
-    final start = stripped.indexOf('{');
-    final end = stripped.lastIndexOf('}');
-    if (start != -1 && end != -1 && end > start) {
-      return stripped.substring(start, end + 1);
-    }
-    return null;
-  }
-
   List<Car> _sortByRelevance(List<Car> cars, UserPreferences prefs) {
     return List<Car>.from(cars)..sort((a, b) {
-      final double target = prefs.hasBudgetConstraint
+      final target = prefs.hasBudgetConstraint
           ? prefs.budget
           : cars.map((c) => c.price).reduce((x, y) => x + y) / cars.length;
       return (a.price - target).abs().compareTo((b.price - target).abs());
@@ -162,7 +145,6 @@ class GeminiRecommendationService {
   Car? _findByBrandModel(String brand, String model, List<Car> cars) {
     final lb = brand.toLowerCase().trim();
     final lm = model.toLowerCase().trim();
-
     for (final car in cars) {
       if (car.brand.toLowerCase() == lb && car.model.toLowerCase() == lm) return car;
     }
@@ -197,16 +179,20 @@ class GeminiRecommendationService {
     return null;
   }
 
-  String _buildPrompt(
+  String _buildSystemPrompt() {
+    return 'You are a car recommendation expert for Malaysian buyers. '
+        'Always respond with valid JSON only. No explanations, no markdown.';
+  }
+
+  String _buildUserPrompt(
     UserPreferences prefs,
     List<Map<String, dynamic>> candidateData,
   ) {
     final originalSection = prefs.originalInput.isNotEmpty
-        ? 'User\'s exact words: "${prefs.originalInput}"\nUse this to understand their true intent.\n\n'
+        ? 'User\'s exact words: "${prefs.originalInput}"\n\n'
         : '';
 
-    return """
-${originalSection}You are a car recommendation expert for Malaysian buyers. Select the best cars from the list below.
+    return """${originalSection}Select the best cars for this user from the list below.
 
 User preferences:
 - Budget: ${prefs.hasBudgetConstraint ? 'Up to RM ${prefs.budget.toStringAsFixed(0)}' : 'No strict budget'}
@@ -215,16 +201,12 @@ User preferences:
 - Fuel Type: ${prefs.fuelType}
 - Priorities (0.0–1.0): Price=${prefs.priceWeight}, FuelEconomy=${prefs.fuelConsumptionWeight}, Safety=${prefs.safetyWeight}, Performance=${prefs.performance}, Comfort=${prefs.comfort}
 
-Available cars (choose ONLY from this list, use exact brand and model values):
+Available cars (use ONLY exact brand and model values from this list):
 ${jsonEncode(candidateData)}
 
-Return ONLY this JSON structure, no other text:
-{
-  "recommendations": [
-    {"brand": "exact brand value", "model": "exact model value"},
-    {"brand": "exact brand value", "model": "exact model value"}
-  ]
-}
-""";
+Return JSON:
+{"recommendations": [{"brand": "exact value", "model": "exact value"}, ...]}
+
+Pick up to 10 best matches, ordered best to least.""";
   }
 }

@@ -12,21 +12,24 @@ class LifestyleInputScreen extends StatefulWidget {
 
 class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
   final _textController = TextEditingController();
+  final _focusNode = FocusNode();
   final _parserService = LifestyleParserService();
-  
+
   bool _isParsing = false;
   ParsedLifestyle? _parsedResult;
 
   final List<String> _examplePrompts = [
     "nak kereta murah untuk kerja KL",
-    "family car, safety penting, balik kampung selalu", 
+    "family car, safety penting, balik kampung selalu",
     "first car fresh grad, jimat minyak",
     "SUV bawah 120k untuk family",
+    "EV under 200k, city driving",
   ];
 
   @override
   void dispose() {
     _textController.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -34,24 +37,18 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
     final input = _textController.text.trim();
     if (input.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Please type something first',
-            style: TextStyle(),
-          ),
-        ),
+        const SnackBar(content: Text('Please type something first')),
       );
       return;
     }
 
+    _focusNode.unfocus();
     setState(() {
       _isParsing = true;
       _parsedResult = null;
     });
 
-    // Save to search history
     await DatabaseService.addSearchHistory(input);
-
     final result = await _parserService.parseLifestyleInput(input);
 
     setState(() {
@@ -67,15 +64,13 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
 
   void _proceedWithPreferences() {
     if (_parsedResult == null) return;
-
     final prefs = _parserService.toUserPreferences(_parsedResult!);
     prefs.originalInput = _textController.text.trim();
     DatabaseService.savePreferences(prefs);
-
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => PreferenceSlidersScreen(preferences: prefs),
+        builder: (_) => PreferenceSlidersScreen(preferences: prefs),
       ),
     );
   }
@@ -83,144 +78,153 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: Text(
-          'Tell Us About You',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            Text(
-              'What car do you need?',
+            const Text(
+              'What car\ndo you need?',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
                 color: Colors.black,
+                height: 1.15,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
-              'Just type naturally - in English, Malay, or mix!\nOur AI understands you.',
+              'Type in English, Malay, or mix — our AI understands you.',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 15,
                 color: Colors.black54,
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
 
             // Text Input Card
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.black.withOpacity(0.1)),
-              ),
-              child: TextField(
-                controller: _textController,
-                maxLines: 4,
-                style: TextStyle(
-                  fontSize: 16,
-                  height: 1.5,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Type anything! e.g. "nak kereta murah untuk kerja" or "family car with good safety"...',
-                  hintStyle: TextStyle(
-                    color: Colors.black38,
-                    fontSize: 15,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
                   ),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(20),
-                ),
-                onChanged: (_) {
-                  if (_parsedResult != null) {
-                    setState(() => _parsedResult = null);
-                  }
-                },
+                ],
               ),
-            ),
-            const SizedBox(height: 20),
-
-            // Analyze Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: FilledButton(
-                onPressed: _isParsing ? null : _parseInput,
-                style: FilledButton.styleFrom(
-                  backgroundColor: _isParsing ? Colors.black38 : Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: _isParsing 
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Analyzing...',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.auto_awesome_rounded),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Analyze My Needs',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _textController,
+                    focusNode: _focusNode,
+                    maxLines: 4,
+                    style: const TextStyle(fontSize: 16, height: 1.5),
+                    decoration: InputDecoration(
+                      hintText:
+                          'e.g. "nak kereta jimat minyak untuk kerja" or "SUV below 100k for family"...',
+                      hintStyle: TextStyle(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        fontSize: 15,
                       ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                    ),
+                    onChanged: (_) {
+                      if (_parsedResult != null) {
+                        setState(() => _parsedResult = null);
+                      }
+                    },
+                  ),
+                  // Analyze button inside the card
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FilledButton(
+                        onPressed: _isParsing ? null : _parseInput,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _isParsing ? Colors.black38 : Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: _isParsing
+                            ? const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor:
+                                          AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  Text('Analyzing...', style: TextStyle(fontSize: 15)),
+                                ],
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.auto_awesome_rounded, size: 18),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Analyze My Needs',
+                                    style: TextStyle(
+                                        fontSize: 15, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 
             // Parsed Results
             if (_parsedResult != null) ...[
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
               _buildParsedResultsCard(),
             ],
 
-            // Example Prompts
-            const SizedBox(height: 40),
-            Text(
-              'Or try an example:',
+            // Example Prompts — horizontal scroll
+            const SizedBox(height: 32),
+            const Text(
+              'Try an example',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 16,
+                fontSize: 15,
+                color: Colors.black87,
               ),
             ),
-            const SizedBox(height: 16),
-            ..._examplePrompts.map((example) => _buildExampleChip(example)),
-            const SizedBox(height: 32),
+            const SizedBox(height: 12),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _examplePrompts
+                    .map((e) => _buildExampleChip(e))
+                    .toList(),
+              ),
+            ),
           ],
         ),
       ),
@@ -229,13 +233,20 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
 
   Widget _buildParsedResultsCard() {
     final result = _parsedResult!;
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.1)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,105 +260,104 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
                   color: Colors.black,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.check_rounded,
-                  color: Colors.white,
-                  size: 20,
-                ),
+                child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
-              Expanded(
+              const Expanded(
                 child: Text(
                   'Analysis Complete',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
                 ),
               ),
               _buildConfidenceBadge(result.confidence),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
             result.summary,
-            style: TextStyle(
-              color: Colors.black54,
-              fontSize: 15,
-              height: 1.5,
-            ),
+            style: TextStyle(color: Colors.black54, fontSize: 14, height: 1.5),
           ),
-          
-          const SizedBox(height: 24),
-          // Extracted Values  
-          _buildInfoRow(
-            Icons.account_balance_wallet_rounded,
-            'Budget',
-            result.hasBudgetConstraint
-                ? 'RM ${result.budget.toStringAsFixed(0)}'
-                : 'Not specified (open budget)',
+
+          const SizedBox(height: 20),
+          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+          const SizedBox(height: 20),
+
+          // Extracted values in a compact 2-column grid
+          Row(
+            children: [
+              Expanded(
+                child: _buildInfoTile(
+                  Icons.account_balance_wallet_rounded,
+                  'Budget',
+                  result.hasBudgetConstraint
+                      ? 'RM ${_formatNumber(result.budget)}'
+                      : 'Open',
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildInfoTile(
+                  Icons.route_rounded,
+                  'Usage',
+                  _formatUsageType(result.usageType),
+                ),
+              ),
+            ],
           ),
-          _buildInfoRow(
-            Icons.route_rounded,
-            'Usage',
-            _formatUsageType(result.usageType),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildInfoTile(
+                  Icons.directions_car_rounded,
+                  'Type',
+                  _formatCarType(result.carType),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildInfoTile(
+                  Icons.local_gas_station_rounded,
+                  'Fuel',
+                  _formatFuelType(result.fuelType),
+                ),
+              ),
+            ],
           ),
-          _buildInfoRow(
-            Icons.directions_car_rounded,
-            'Car Type',
-            _formatCarType(result.carType),
+
+          const SizedBox(height: 20),
+          const Text(
+            'Priority Weights',
+            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
           ),
-          _buildInfoRow(
-            Icons.local_gas_station_rounded,
-            'Fuel Type',
-            _formatFuelType(result.fuelType),
-          ),
-          
-          const SizedBox(height: 24),
-          Text(
-            'Detected Priorities',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           _buildPriorityBar('Price', result.priceImportance),
           _buildPriorityBar('Fuel Economy', result.fuelImportance),
           _buildPriorityBar('Safety', result.safetyImportance),
-          
+
           if (result.detectedNeeds.isNotEmpty) ...[
-            const SizedBox(height: 24),
-            Text(
-              'What I Detected',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: result.detectedNeeds.map((need) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.black.withOpacity(0.1)),
-                ),
-                child: Text(
-                  need,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.black87,
-                  ),
-                ),
-              )).toList(),
+              children: result.detectedNeeds
+                  .map((need) => Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.05),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          need,
+                          style: const TextStyle(fontSize: 12, color: Colors.black87),
+                        ),
+                      ))
+                  .toList(),
             ),
           ],
-          
-          const SizedBox(height: 32),
+
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             height: 52,
@@ -355,19 +365,16 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
               onPressed: _proceedWithPreferences,
               style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
-              child: Text(
+              child: const Text(
                 'Continue with these preferences',
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 15,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
             child: TextButton(
@@ -377,16 +384,13 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => PreferenceSlidersScreen(preferences: prefs),
+                    builder: (_) => PreferenceSlidersScreen(preferences: prefs),
                   ),
                 );
               },
-              child: Text(
+              child: const Text(
                 'Adjust preferences manually',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
+                style: TextStyle(fontSize: 13, color: Colors.black45),
               ),
             ),
           ),
@@ -395,30 +399,31 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
+  Widget _buildInfoTile(IconData icon, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F5F5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: Colors.black54,
+          Row(
+            children: [
+              Icon(icon, size: 14, color: Colors.black38),
+              const SizedBox(width: 4),
+              Text(label,
+                  style: const TextStyle(fontSize: 11, color: Colors.black38)),
+            ],
           ),
-          const SizedBox(width: 12),
-          Text(
-            '$label: ',
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 15,
-            ),
-          ),
+          const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(
-              fontSize: 15,
-              color: Colors.black87,
-            ),
+            style: const TextStyle(
+                fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -427,45 +432,33 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
 
   Widget _buildPriorityBar(String label, double value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
           SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.black87,
-              ),
-            ),
+            width: 88,
+            child: Text(label,
+                style: const TextStyle(fontSize: 13, color: Colors.black87)),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
-            child: Container(
-              height: 6,
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: value,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: value,
+                minHeight: 6,
+                backgroundColor: Colors.black.withValues(alpha: 0.06),
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.black),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          Text(
-            '${(value * 100).toInt()}%',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+          SizedBox(
+            width: 32,
+            child: Text(
+              '${(value * 100).toInt()}%',
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+              textAlign: TextAlign.right,
             ),
           ),
         ],
@@ -475,99 +468,116 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
 
   Widget _buildExampleChip(String example) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
+      padding: const EdgeInsets.only(right: 10),
+      child: GestureDetector(
         onTap: () => _useExample(example),
-        borderRadius: BorderRadius.circular(12),
         child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.black.withOpacity(0.1)),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
           ),
-          child: Text(
-            example,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.north_west_rounded, size: 12, color: Colors.black38),
+              const SizedBox(width: 6),
+              Text(
+                example,
+                style: const TextStyle(fontSize: 13, color: Colors.black87),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
+  Widget _buildConfidenceBadge(String confidence) {
+    Color bg;
+    String label;
+    switch (confidence) {
+      case 'high':
+        bg = Colors.black;
+        label = 'High';
+        break;
+      case 'low':
+        bg = Colors.black38;
+        label = 'Low';
+        break;
+      default:
+        bg = Colors.black87;
+        label = 'Good';
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+            fontSize: 11, color: Colors.white, fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+
+  String _formatNumber(double v) {
+    if (v >= 1000) {
+      final thousands = (v / 1000).toStringAsFixed(v % 1000 == 0 ? 0 : 1);
+      return '${thousands}k';
+    }
+    return v.toStringAsFixed(0);
+  }
+
   String _formatUsageType(String type) {
     switch (type) {
-      case 'city': return 'City driving';
-      case 'highway': return 'Highway driving';
-      case 'both': return 'Mixed (city + highway)';
-      default: return type;
+      case 'city':
+        return 'City';
+      case 'highway':
+        return 'Highway';
+      case 'both':
+        return 'Mixed';
+      default:
+        return type;
     }
   }
 
   String _formatCarType(String type) {
     switch (type) {
-      case 'any': return 'Any type';
-      case 'sedan': return 'Sedan';
-      case 'suv': return 'SUV';
-      case 'mpv': return 'MPV';
-      case 'hatchback': return 'Hatchback';
-      case 'truck': return 'Truck';
-      case 'van': return 'Van';
-      default: return type;
+      case 'any':
+        return 'Any';
+      case 'sedan':
+        return 'Sedan';
+      case 'suv':
+        return 'SUV';
+      case 'mpv':
+        return 'MPV';
+      case 'hatchback':
+        return 'Hatchback';
+      case 'truck':
+        return 'Truck';
+      case 'van':
+        return 'Van';
+      default:
+        return type;
     }
   }
 
   String _formatFuelType(String type) {
     switch (type) {
       case 'any':
-        return 'Any fuel type';
+        return 'Any';
       case 'petrol':
         return 'Petrol';
       case 'ev':
-        return 'EV (Electric)';
+        return 'Electric';
       case 'hybrid':
         return 'Hybrid';
       default:
         return type;
     }
-  }
-
-  Widget _buildConfidenceBadge(String confidence) {
-    Color bgColor;
-    String label;
-    
-    switch (confidence) {
-      case 'high':
-        bgColor = Colors.black;
-        label = 'High Confidence';
-        break;
-      case 'low':
-        bgColor = Colors.black38;
-        label = 'Best Guess';
-        break;
-      default:
-        bgColor = Colors.black87;
-        label = 'Confident';
-    }
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          color: Colors.white,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
   }
 }

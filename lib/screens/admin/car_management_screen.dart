@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/car.dart';
 import '../../services/image_management_service.dart';
+import 'image_status_screen.dart';
 
 class CarManagementScreen extends StatefulWidget {
   const CarManagementScreen({super.key});
@@ -38,6 +39,16 @@ class _CarManagementScreenState extends State<CarManagementScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Car Database Management'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.photo_library_rounded),
+            tooltip: 'Image Status',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ImageStatusScreen()),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [

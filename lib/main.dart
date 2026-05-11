@@ -4,7 +4,6 @@ import 'services/database_service.dart';
 import 'screens/lifestyle_input_screen.dart';
 import 'screens/favorites_screen.dart';
 import 'screens/image_gallery_screen.dart';
-import 'screens/image_debug_screen.dart';
 import 'package:car_recommendation_app/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,29 +11,36 @@ import 'package:firebase_auth/firebase_auth.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
+  // Firebase must be first — everything else depends on it.
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Sign in anonymously so Firestore rules that require auth can be satisfied.
+  // Auth + dotenv are independent — run them in parallel.
+  await Future.wait([
+    _signInAnonymously(),
+    dotenv.load(fileName: ".env"),
+  ]);
+
+  // Mark service as ready without blocking on a network fetch.
+  DatabaseService.initializeSync();
+
+  // Show the app immediately — cars load in the background.
+  runApp(const MyApp());
+
+  // Warm the cache after the first frame is on screen.
+  DatabaseService.refreshCarsFromFirestore();
+}
+
+Future<void> _signInAnonymously() async {
   try {
     final auth = FirebaseAuth.instance;
     if (auth.currentUser == null) {
       await auth.signInAnonymously();
     }
   } catch (e) {
-    // App can still run, but Firestore reads may be denied by security rules.
     print('Anonymous auth failed: $e');
   }
-
-  // Initialize environment variables
-  await dotenv.load(fileName: ".env");
-
-  // Initialize app-level cache service
-  await DatabaseService.initialize();
-  
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -54,8 +60,8 @@ class MyApp extends StatelessWidget {
           surface: Colors.white,
           onSurface: Colors.black,
         ),
-        scaffoldBackgroundColor: const Color(0xFFFAFAFA),
-        appBarTheme: AppBarTheme(
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+        appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           foregroundColor: Colors.black,
           elevation: 0,
@@ -69,9 +75,7 @@ class MyApp extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.black,
             foregroundColor: Colors.white,
-            textStyle: TextStyle(
-              fontWeight: FontWeight.w500,
-            ),
+            textStyle: const TextStyle(fontWeight: FontWeight.w500),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -81,9 +85,7 @@ class MyApp extends StatelessWidget {
           style: FilledButton.styleFrom(
             backgroundColor: Colors.black,
             foregroundColor: Colors.white,
-            textStyle: TextStyle(
-              fontWeight: FontWeight.w500,
-            ),
+            textStyle: const TextStyle(fontWeight: FontWeight.w500),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -92,7 +94,6 @@ class MyApp extends StatelessWidget {
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             foregroundColor: Colors.black54,
-            textStyle: TextStyle(),
           ),
         ),
         cardTheme: const CardThemeData(
@@ -117,236 +118,255 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          children: [
-            const Spacer(flex: 1),
-            
-            // App Icon/Logo Area
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(24),
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Spacer(flex: 1),
+
+              // Logo + Brand
+              Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.directions_car_rounded,
+                      size: 28,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'CarFinder',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      Text(
+                        'Malaysia',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.black38,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              child: const Icon(
-                Icons.directions_car_rounded,
-                size: 60,
-                color: Colors.white,
+
+              const SizedBox(height: 48),
+
+              // Hero headline
+              const Text(
+                'Find your\nperfect car.',
+                style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  height: 1.1,
+                ),
               ),
-            ),
-            const SizedBox(height: 32),
-            
-            // Title
-            Text(
-              'Car Finder',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
+              const SizedBox(height: 16),
+              Text(
+                'AI-powered recommendations tailored\nfor Malaysian buyers.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.black54,
+                  height: 1.6,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            
-            // Subtitle
-            Text(
-              'AI-powered car recommendations\nfor Malaysian market',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
-                height: 1.5,
+
+              const SizedBox(height: 40),
+
+              // Feature cards row
+              Row(
+                children: [
+                  _FeatureCard(
+                    icon: Icons.psychology_rounded,
+                    label: 'Natural\nLanguage',
+                  ),
+                  const SizedBox(width: 12),
+                  _FeatureCard(
+                    icon: Icons.tune_rounded,
+                    label: 'Smart\nFiltering',
+                  ),
+                  const SizedBox(width: 12),
+                  _FeatureCard(
+                    icon: Icons.leaderboard_rounded,
+                    label: 'TOPSIS\nRanking',
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 48),
-            
-            // Feature Pills
-            _buildFeaturePill('Content-Based Filtering'),
-            const SizedBox(height: 12),
-            _buildFeaturePill('TOPSIS Multi-Criteria Ranking'),
-            const SizedBox(height: 12),
-            _buildFeaturePill('Natural Language Processing'),
-            
-            const Spacer(flex: 2),
-            
-            // Main CTA Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: FilledButton(
-                onPressed: () {
-                  Navigator.push(
+
+              const Spacer(flex: 2),
+
+              // CTA Button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton(
+                  onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const LifestyleInputScreen(),
+                      builder: (_) => const LifestyleInputScreen(),
                     ),
-                  );
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Find My Car',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Find My Car',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_forward_rounded, size: 20),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Secondary links
+              Row(
+                children: [
+                  Expanded(
+                    child: _SecondaryButton(
+                      icon: Icons.favorite_rounded,
+                      label: 'Favorites',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const FavoritesScreen()),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward_rounded, size: 20),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Database Management Link
-            SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                onPressed: () {
-                  // TODO: Navigate to a new screen if needed, or remove this button
-                },
-                icon: const Icon(Icons.storage_rounded, size: 20),
-                label: Text(
-                  'Manage Database',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
                   ),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.black54,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            
-            // Favorites Link
-            SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const FavoritesScreen(),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _SecondaryButton(
+                      icon: Icons.photo_library_rounded,
+                      label: 'Car Gallery',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ImageGalleryScreen()),
+                      ),
                     ),
-                  );
-                },
-                icon: const Icon(Icons.favorite_rounded, size: 20),
-                label: Text(
-                  'My Favorites',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
                   ),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.black54,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            
-            // Image Gallery Link
-            SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ImageGalleryScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.photo_library_rounded, size: 20),
-                label: Text(
-                  'View Car Images',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.black54,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            
-            // Debug Image URLs Link (for troubleshooting)
-            SizedBox(
-              width: double.infinity,
-              child: TextButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ImageDebugScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.bug_report_rounded, size: 20),
-                label: Text(
-                  'Debug Image URLs',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.orange.shade700,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
 
-  static Widget _buildFeaturePill(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withOpacity(0.1)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              shape: BoxShape.circle,
-            ),
+              const SizedBox(height: 32),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.black87,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
+class _FeatureCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
 
+  const _FeatureCard({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 24, color: Colors.black87),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Colors.black54,
+                height: 1.3,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SecondaryButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _SecondaryButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: Colors.black54),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black54,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/car.dart';
 import '../services/database_service.dart';
+import '../services/firestore_service.dart';
 import '../services/simple_cloudinary_service.dart';
 import '../widgets/car_image_widget.dart';
 
@@ -12,10 +14,9 @@ class ImageGalleryScreen extends StatefulWidget {
 }
 
 class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
-  List<Car> cars = [];
-  bool isLoading = true;
-  int loadedImages = 0;
-  int failedImages = 0;
+  List<Car> _cars = [];
+  bool _isLoading = true;
+  String _filter = '';
 
   @override
   void initState() {
@@ -24,274 +25,83 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
   }
 
   Future<void> _loadCars() async {
+    setState(() => _isLoading = true);
     try {
-      List<Car> allCars;
+      List<Car> all;
       if (DatabaseService.hasCachedCars()) {
-        allCars = DatabaseService.getCachedCars();
+        all = DatabaseService.getCachedCars();
       } else {
-        // If no cached cars, you might want to load from CSV
-        setState(() {
-          isLoading = false;
-        });
-        _showError('No cars found. Please import your car data first.');
-        return;
+        all = await FirestoreService().getCars();
+        if (all.isNotEmpty) DatabaseService.cacheCars(all);
       }
-      
       setState(() {
-        cars = allCars;
-        isLoading = false;
+        _cars = all;
+        _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      _showError('Failed to load cars: $e');
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load cars: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 4),
-      ),
-    );
+  List<Car> get _filtered {
+    if (_filter.isEmpty) return _cars;
+    final q = _filter.toLowerCase();
+    return _cars
+        .where((c) =>
+            c.brand.toLowerCase().contains(q) ||
+            c.model.toLowerCase().contains(q))
+        .toList();
   }
 
-  void _showImageDetails(Car car) {
-    final publicId = CloudinaryImageService.generatePublicId(car);
-    final urls = CloudinaryImageService.getCarImageUrls(car);
-    
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      car.displayName,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              
-              // Large image preview
-              CarImageWidget(
-                car: car,
-                width: double.infinity,
-                height: 200,
-                size: 'large',
-              ),
-              
-              const SizedBox(height: 16),
-              
-              Text(
-                'Image Details:',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 8),
-              
-              Text('Public ID: $publicId'),
-              const SizedBox(height: 8),
-              
-              Text(
-                'Expected filename in Cloudinary:',
-                style: TextStyle(fontWeight: FontWeight.w500),
-              ),
-              SelectableText(
-                '$publicId.jpg',
-                style: TextStyle(fontSize: 12),
-              ),
-              
-              const SizedBox(height: 16),
-              
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showUrlsDialog(car, urls);
-                },
-                child: const Text('View All URLs'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showUrlsDialog(Car car, Map<String, String?> urls) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Image URLs - ${car.displayName}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              
-              ...urls.entries.map((entry) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${entry.key.toUpperCase()}:',
-                      style: TextStyle(fontWeight: FontWeight.w500),
-                    ),
-                    const SizedBox(height: 4),
-                    SelectableText(
-                      entry.value ?? 'No image available',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: entry.value != null ? Colors.black : Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
-              )),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  int get _withImages =>
+      _cars.where((c) => CloudinaryImageService.hasImage(c)).length;
 
   @override
   Widget build(BuildContext context) {
+    final filtered = _filtered;
     return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        title: Text(
-          'Car Image Gallery',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        title: const Text('Car Gallery',
+            style: TextStyle(fontWeight: FontWeight.w600)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('How Images Work'),
-                  content: const Text(
-                    'This screen shows all cars and attempts to load their images from Cloudinary.\n\n'
-                    'Images are loaded using the pattern:\n'
-                    'brand_model_variant.jpg\n\n'
-                    'If an image fails to load, make sure the filename in Cloudinary matches the expected pattern (shown when you tap on a car).'
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('OK'),
-                    ),
-                  ],
-                ),
-              );
-            },
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _loadCars,
+            tooltip: 'Refresh',
           ),
         ],
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(color: Colors.black))
           : Column(
               children: [
-                // Status header
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  color: Colors.grey.shade100,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildStatCard('Total Cars', cars.length.toString(), Colors.blue),
-                      _buildStatCard('Loaded', loadedImages.toString(), Colors.green),
-                      _buildStatCard('Failed', failedImages.toString(), Colors.red),
-                    ],
-                  ),
-                ),
-                
-                // Cars grid
+                _buildHeader(),
+                _buildSearchBar(),
                 Expanded(
-                  child: cars.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.car_rental,
-                                size: 64,
-                                color: Colors.grey.shade400,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No cars found',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey.shade600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Import your car data first',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
+                  child: filtered.isEmpty
+                      ? _buildEmptyState()
                       : GridView.builder(
                           padding: const EdgeInsets.all(16),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
                             crossAxisSpacing: 12,
                             mainAxisSpacing: 12,
-                            childAspectRatio: 0.75,
+                            childAspectRatio: 0.72,
                           ),
-                          itemCount: cars.length,
-                          itemBuilder: (context, index) {
-                            final car = cars[index];
-                            return _buildCarCard(car);
-                          },
+                          itemCount: filtered.length,
+                          itemBuilder: (_, i) => _buildCarCard(filtered[i]),
                         ),
                 ),
               ],
@@ -299,89 +109,191 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: color,
+  Widget _buildHeader() {
+    final total = _cars.length;
+    final covered = _withImages;
+    final pct = total == 0 ? 0.0 : covered / total;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$covered / $total cars with images',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: pct,
+                    minHeight: 6,
+                    backgroundColor:
+                        Colors.black.withValues(alpha: 0.08),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Colors.black),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Text(
+            '${(pct * 100).toStringAsFixed(0)}%',
+            style: const TextStyle(
+                fontWeight: FontWeight.bold, fontSize: 20),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: TextField(
+        onChanged: (v) => setState(() => _filter = v),
+        decoration: InputDecoration(
+          hintText: 'Search brand or model...',
+          prefixIcon: const Icon(Icons.search_rounded, size: 20),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding:
+              const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide:
+                BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide:
+                BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.black),
           ),
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.photo_library_outlined, size: 64, color: Colors.black12),
+          const SizedBox(height: 16),
+          Text(
+            _filter.isEmpty ? 'No cars found' : 'No results for "$_filter"',
+            style: const TextStyle(fontSize: 16, color: Colors.black45),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildCarCard(Car car) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: InkWell(
-        onTap: () => _showImageDetails(car),
-        borderRadius: BorderRadius.circular(12),
+    final hasImage = CloudinaryImageService.hasImage(car);
+
+    return GestureDetector(
+      onTap: () => _showDetails(car),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.black.withValues(alpha: 0.07),
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Image area
             Expanded(
               flex: 3,
-              child: CarImageWidget(
-                car: car,
-                width: double.infinity,
-                height: double.infinity,
-                size: 'medium',
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(15)),
+                    child: CarImageWidget(
+                      car: car,
+                      width: double.infinity,
+                      height: double.infinity,
+                      size: 'medium',
+                      borderRadius: BorderRadius.zero,
+                    ),
+                  ),
+                  // Image status indicator
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      width: 20,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: hasImage
+                            ? Colors.green.withValues(alpha: 0.9)
+                            : Colors.orange.withValues(alpha: 0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        hasImage ? Icons.check_rounded : Icons.add_rounded,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            
+
+            // Car info
             Expanded(
               flex: 2,
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       car.brand,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey.shade600,
-                      ),
+                      style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black38,
+                          fontWeight: FontWeight.w500),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       car.model,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.bold),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const Spacer(),
                     Text(
-                      'RM ${car.price.toStringAsFixed(0)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.blue.shade700,
-                      ),
+                      'RM ${_formatPrice(car.price)}',
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black54),
                     ),
                   ],
                 ),
@@ -391,5 +303,168 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
         ),
       ),
     );
+  }
+
+  void _showDetails(Car car) {
+    final publicId =
+        CloudinaryImageService.conventionPublicIdFor(car.brand, car.model);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Handle
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            Text(car.displayName,
+                style: const TextStyle(
+                    fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('RM ${_formatPrice(car.price)}',
+                style:
+                    const TextStyle(fontSize: 14, color: Colors.black45)),
+
+            const SizedBox(height: 20),
+
+            // Image preview
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: CarImageWidget(
+                car: car,
+                width: double.infinity,
+                height: 200,
+                size: 'large',
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // Status row
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: CloudinaryImageService.hasImage(car)
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.orange.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CloudinaryImageService.hasImage(car)
+                            ? Icons.check_circle_rounded
+                            : Icons.image_not_supported_rounded,
+                        size: 14,
+                        color: CloudinaryImageService.hasImage(car)
+                            ? Colors.green
+                            : Colors.orange,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        CloudinaryImageService.hasImage(car)
+                            ? 'Image available'
+                            : 'No image yet',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: CloudinaryImageService.hasImage(car)
+                              ? Colors.green
+                              : Colors.orange,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Public ID to use for upload
+            const Text('Upload this file to Cloudinary:',
+                style:
+                    TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+            const SizedBox(height: 6),
+            GestureDetector(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: '$publicId.jpg'));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Copied to clipboard'),
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: Colors.black,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                      color: Colors.black.withValues(alpha: 0.08)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '$publicId.jpg',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'monospace',
+                            color: Colors.black87),
+                      ),
+                    ),
+                    const Icon(Icons.copy_rounded,
+                        size: 16, color: Colors.black38),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatPrice(double price) {
+    final s = price.toStringAsFixed(0);
+    final buf = StringBuffer();
+    var count = 0;
+    for (var i = s.length - 1; i >= 0; i--) {
+      if (count > 0 && count % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+      count++;
+    }
+    return buf.toString().split('').reversed.join();
   }
 }
