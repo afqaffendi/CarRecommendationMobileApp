@@ -75,8 +75,8 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
               icon: Icons.local_gas_station_rounded,
               title: 'Fuel Economy',
               subtitle: 'Better mileage ranked higher',
-              value: _prefs.fuelEconomyWeight,
-              onChanged: (v) => setState(() => _prefs.fuelEconomyWeight = v),
+              value: _prefs.fuelConsumptionWeight,
+              onChanged: (v) => setState(() => _prefs.fuelConsumptionWeight = v),
             ),
             const SizedBox(height: 24),
 
@@ -242,9 +242,9 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
   }
 
   Widget _buildWeightSummary() {
-    final total = _prefs.priceWeight + _prefs.fuelEconomyWeight + _prefs.safetyWeight;
+    final total = _prefs.priceWeight + _prefs.fuelConsumptionWeight + _prefs.safetyWeight;
     final pricePercent = total > 0 ? (_prefs.priceWeight / total * 100).toInt() : 33;
-    final fuelPercent = total > 0 ? (_prefs.fuelEconomyWeight / total * 100).toInt() : 33;
+    final fuelPercent = total > 0 ? (_prefs.fuelConsumptionWeight / total * 100).toInt() : 33;
     final safetyPercent = total > 0 ? (_prefs.safetyWeight / total * 100).toInt() : 34;
 
     return Container(

@@ -12,7 +12,7 @@ void main() async {
   );
 
   final firestore = FirebaseFirestore.instance;
-  final collection = firestore.collection('cars');
+  final collection = firestore.collection('malaysia_cars');
 
   final input = File('../assets/cars.csv').openRead();
   final fields = await input

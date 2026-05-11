@@ -44,7 +44,7 @@ class AIExplanationService {
     final carDetails = topCars.map((rc) {
       final c = rc.car;
       return '''
-- ${c.displayName}: RM${c.price.toStringAsFixed(0)}, ${c.fuelEconomy}L/100km, 
+- ${c.displayName}: RM${c.price.toStringAsFixed(0)}, ${c.fuelConsumption}L/100km, 
   Safety: ${c.safetyRating}/5, TOPSIS Score: ${(rc.score * 100).toStringAsFixed(1)}%''';
     }).join('\n');
 
@@ -52,11 +52,12 @@ class AIExplanationService {
 You are a car recommendation expert. Explain why these cars were recommended.
 
 User Preferences:
-- Budget: RM${prefs.budget.toStringAsFixed(0)}
+- Budget: ${prefs.hasBudgetConstraint ? 'RM${prefs.budget.toStringAsFixed(0)}' : 'Not specified (open budget)'}
 - Usage: ${prefs.usageType} driving
-- Parking space: ${prefs.parkingSpace}
+- Preferred car type: ${prefs.carType}
+- Preferred fuel type: ${prefs.fuelType}
 - Priority weights: Price ${(prefs.priceWeight * 100).toInt()}%, 
-  Fuel Economy ${(prefs.fuelEconomyWeight * 100).toInt()}%, 
+  Fuel Consumption ${(prefs.fuelConsumptionWeight * 100).toInt()}%, 
   Safety ${(prefs.safetyWeight * 100).toInt()}%
 
 From $totalCars cars, ${topCars.length} best matches found:
@@ -83,13 +84,17 @@ Be concise and practical. Use Malaysian context (MYR currency, local driving con
       final c = rc.car;
       buffer.writeln("**#${rc.rank} ${c.displayName}**");
       buffer.writeln("- Price: RM${c.price.toStringAsFixed(0)}");
-      buffer.writeln("- Fuel Economy: ${c.fuelEconomy}L/100km");
+      buffer.writeln("- Fuel Consumption: ${c.fuelConsumption}L/100km");
       buffer.writeln("- Safety Rating: ${c.safetyRating}/5 stars");
       buffer.writeln("- Match Score: ${(rc.score * 100).toStringAsFixed(1)}%\n");
     }
 
-    buffer.writeln("These cars were selected based on your budget of RM${prefs.budget.toStringAsFixed(0)}, ");
-    buffer.writeln("${prefs.usageType} driving needs, and ${prefs.parkingSpace} parking space.");
+    buffer.writeln(
+      prefs.hasBudgetConstraint
+          ? "These cars were selected based on your budget of RM${prefs.budget.toStringAsFixed(0)}, "
+          : "These cars were selected without a strict budget cap, "
+    );
+    buffer.writeln("${prefs.usageType} driving needs, preferred car type: ${prefs.carType}, and preferred fuel type: ${prefs.fuelType}.");
 
     return buffer.toString();
   }
@@ -101,18 +106,18 @@ Compare these two cars for a Malaysian buyer:
 
 Car 1: ${car1.displayName}
 - Price: RM${car1.price.toStringAsFixed(0)}
-- Fuel: ${car1.fuelEconomy}L/100km
+- Fuel: ${car1.fuelConsumption}L/100km
 - Safety: ${car1.safetyRating}/5
 - Best for: ${car1.usageType} driving
 
 Car 2: ${car2.displayName}
 - Price: RM${car2.price.toStringAsFixed(0)}
-- Fuel: ${car2.fuelEconomy}L/100km
+- Fuel: ${car2.fuelConsumption}L/100km
 - Safety: ${car2.safetyRating}/5
 - Best for: ${car2.usageType} driving
 
 User priorities: Price ${(prefs.priceWeight * 100).toInt()}%, 
-Fuel ${(prefs.fuelEconomyWeight * 100).toInt()}%, Safety ${(prefs.safetyWeight * 100).toInt()}%
+Fuel ${(prefs.fuelConsumptionWeight * 100).toInt()}%, Safety ${(prefs.safetyWeight * 100).toInt()}%
 
 Provide a brief comparison highlighting which car is better for what scenario.
 ''';

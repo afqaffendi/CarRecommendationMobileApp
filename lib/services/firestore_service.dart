@@ -6,7 +6,7 @@ class FirestoreService {
 
   Future<List<Car>> getCars() async {
     try {
-      const candidateCollections = ['cars', 'Cars', 'carlist'];
+      const candidateCollections = ['malaysia_cars', 'Cars', 'carlist'];
 
       for (final collectionName in candidateCollections) {
         final snapshot = await _db.collection(collectionName).get();

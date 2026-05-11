@@ -241,8 +241,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildSpecChip(Icons.local_gas_station_rounded, '${car.fuelEconomy}L/100km'),
-                _buildSpecChip(Icons.shield_rounded, '${car.safetyRating}/5 stars'),
+                _buildSpecChip(Icons.local_gas_station_rounded, '${car.fuelConsumption}L/100km'),
+                _buildSpecChip(Icons.shield_rounded, '${car.safetyRating}/5'),
                 _buildSpecChip(Icons.people_rounded, '${car.seats} seats'),
                 _buildSpecChip(Icons.directions_car_rounded, car.type),
                 _buildSpecChip(Icons.speed_rounded, '${car.horsepower.toInt()}hp'),

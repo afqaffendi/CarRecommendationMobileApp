@@ -3,11 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class Car {
   final String brand;
   final String model;
+  final String engine;
   final double price;
-  final double fuelEconomy;
+
+  final double fuelConsumption; // L/100km
   final int seats;
   final int bootSpace;
-  final int safetyRating;
+  final String safetyRating;
   final double horsepower;
   final String type;
   final int year;
@@ -16,8 +18,10 @@ class Car {
   Car({
     required this.brand,
     required this.model,
+    required this.engine,
     required this.price,
-    required this.fuelEconomy,
+
+    required this.fuelConsumption,
     required this.seats,
     required this.bootSpace,
     required this.safetyRating,
@@ -64,20 +68,22 @@ class Car {
       return 'Sedan';
     }
 
-    final model = parseString(['Model', 'model']);
-    final type = parseString(['Type', 'type'], inferType(model));
+    final model = parseString(['model_name', 'Model', 'model']);
+    final type = parseString(['car_type', 'Type', 'type'], inferType(model));
 
     return Car(
-      brand: parseString(['Brand', 'brand']),
+      brand: parseString(['brand', 'Brand']),
       model: model,
-      price: parseDouble(['Price (RM)', 'Price', 'price', 'priceRm']),
-      fuelEconomy: parseDouble(['Fuel Economy', 'fuelEconomy', 'fuel_economy']),
-      seats: parseInt(['Seats', 'seats']),
+      engine: parseString(['engine_cap', 'Engine', 'engine']),
+      price: parseDouble(['price_car', 'Price (RM)', 'Price', 'price', 'priceRm']),
+
+      fuelConsumption: parseDouble(['fuel_consumption_l_100km', 'fuelConsumption']),
+      seats: parseInt(['seats', 'Seats']),
       bootSpace: parseInt(['Boot Space', 'bootSpace', 'boot_space']),
-      safetyRating: parseInt(['Safety Rating', 'safetyRating', 'safety_rating']),
-      horsepower: parseDouble(['Horsepower', 'horsepower', 'hp']),
+      safetyRating: parseString(['safety_rating', 'Safety Rating', 'safetyRating', 'safety_rating']),
+      horsepower: parseDouble(['hp', 'Horsepower', 'horsepower']),
       type: type,
-      year: parseInt(['Year', 'year'], 2024),
+      year: parseInt(['year', 'Year'], 2024),
       imageUrl: parseString(['imageUrl', 'image_url']).isEmpty
           ? null
           : parseString(['imageUrl', 'image_url']),
@@ -85,6 +91,17 @@ class Car {
   }
 
   String get displayName => '$brand $model';
+
+  String get fuelCategory {
+    final e = engine.toLowerCase();
+    if (e.contains('hybrid') || e.contains('phev') || e.contains('hev') || e.contains('e:hev') || e.contains('ehev')) {
+      return 'hybrid';
+    }
+    if (e.contains('ev') || e.contains('electric') || e.contains('bev')) {
+      return 'ev';
+    }
+    return 'petrol';
+  }
 
   // Backward-compatibility getters for existing UI/services.
   String? get variant => null;
@@ -115,5 +132,42 @@ class Car {
       default:
         return 'medium';
     }
+  }
+
+  factory Car.empty() {
+    return Car(
+      brand: '',
+      model: '',
+      engine: '',
+      price: 0,
+      fuelConsumption: 0,
+      seats: 0,
+      bootSpace: 0,
+      safetyRating: '',
+      horsepower: 0,
+      type: '',
+      year: 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'brand': brand,
+      'model': model,
+      'engine': engine,
+      'price': price,
+      'fuelConsumption': fuelConsumption,
+      'seats': seats,
+      'bootSpace': bootSpace,
+      'safetyRating': safetyRating,
+      'horsepower': horsepower,
+      'type': type,
+      'year': year,
+      'imageUrl': imageUrl,
+      'displayName': displayName,
+      'fuelCategory': fuelCategory,
+      'usageType': usageType,
+      'parkingSize': parkingSize,
+    };
   }
 }

@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import '../models/car.dart';
 import '../models/user_preferences.dart';
 import '../services/cbf_service.dart';
+import '../services/gemini_recommendation_service.dart';
 import '../services/topsis_service.dart';
 import '../services/ai_explanation_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/car_image_widget.dart';
 import 'favorites_screen.dart';
+import 'preference_sliders_screen.dart';
+import 'admin/car_management_screen.dart';
 
 const String _apiKey = 'AIzaSyCNGkdzg4FL06QxfmiescIJD16WBhI3GNw';
 
@@ -28,6 +31,8 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
   int _filteredCount = 0;
   final FirestoreService _firestoreService = FirestoreService();
   List<Car> _favoriteCars = [];
+  bool _useGemini = false;
+  bool _geminiFalledBack = false;
 
   @override
   void initState() {
@@ -36,10 +41,12 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
   }
 
   Future<void> _loadAndRankCars() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _geminiFalledBack = false;
+    });
 
     try {
-      // Load cars from Firestore
       List<Car> allCars = await _firestoreService.getCars();
       _totalCars = allCars.length;
 
@@ -54,26 +61,24 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
         return;
       }
 
-      // Stage 1: CBF Filtering
-      var filteredCars = CBFService.filterCars(allCars, widget.preferences);
-      _filteredCount = filteredCars.length;
-
-      // If hard constraints are too strict, fall back to budget-only filtering.
-      if (filteredCars.isEmpty) {
-        filteredCars = allCars.where((car) => car.price <= widget.preferences.budget).toList();
+      if (_useGemini) {
+        await _runGeminiRanking(allCars);
+      } else {
+        await _runClassicRanking(allCars);
       }
-
-      // Last-resort fallback so users still see recommendations.
-      if (filteredCars.isEmpty) {
-        filteredCars = allCars;
-      }
-
-      // Stage 2: TOPSIS Ranking
-      _rankedCars = TopsisService.rankCars(filteredCars, widget.preferences);
 
       setState(() => _isLoading = false);
 
-      // Generate AI Explanation
+      if (_geminiFalledBack && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gemini AI unavailable — showing Classic results'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+
       _generateExplanation();
     } catch (e) {
       setState(() {
@@ -81,6 +86,109 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
         _explanation = 'Error loading cars: $e';
       });
     }
+  }
+
+  Future<void> _runGeminiRanking(List<Car> allCars) async {
+    final geminiService = GeminiRecommendationService(apiKey: _apiKey);
+    final recommendedCars = await geminiService.getRecommendations(
+      preferences: widget.preferences,
+      allCars: allCars,
+    );
+
+    _filteredCount = allCars.length;
+
+    if (recommendedCars.isEmpty) {
+      // Fallback to Classic so the user always sees results
+      _geminiFalledBack = true;
+      await _runClassicRanking(allCars);
+      return;
+    }
+
+    _rankedCars = List<RankedCar>.generate(recommendedCars.length, (index) {
+      final car = recommendedCars[index];
+      final score = 1.0 - (index / recommendedCars.length);
+      return RankedCar(car: car, score: score, rank: index + 1);
+    });
+  }
+
+  Future<void> _runClassicRanking(List<Car> allCars) async {
+    // Stage 1: Strict CBF Filtering
+    final filteredCars = CBFService.filterCars(allCars, widget.preferences);
+    _filteredCount = filteredCars.length;
+
+    if (filteredCars.isEmpty) {
+      final diagnostics = CBFService.getNoMatchDiagnostics(allCars, widget.preferences);
+      setState(() {
+        _rankedCars = [];
+        _explanation = _buildNoMatchExplanation(diagnostics);
+      });
+      return;
+    }
+
+    // Stage 2: TOPSIS Ranking
+    final rankedCars = TopsisService.rankCars(filteredCars, widget.preferences);
+
+    // Defensive pass: de-duplicate repeated models + limit to top 10.
+    final uniqueRankedCars = <RankedCar>[];
+    final seenModels = <String>{};
+    for (final ranked in rankedCars) {
+      final modelKey = ranked.car.displayName.toLowerCase();
+      if (seenModels.contains(modelKey)) continue;
+
+      seenModels.add(modelKey);
+      uniqueRankedCars.add(ranked);
+      if (uniqueRankedCars.length == 10) break;
+    }
+
+    _rankedCars = List<RankedCar>.generate(uniqueRankedCars.length, (index) {
+      final ranked = uniqueRankedCars[index];
+      return RankedCar(car: ranked.car, score: ranked.score, rank: index + 1);
+    });
+  }
+
+  String _buildNoMatchExplanation(Map<String, dynamic> diagnostics) {
+    final afterBudget = diagnostics['afterBudget'] as int? ?? 0;
+    final afterUsage = diagnostics['afterUsage'] as int? ?? 0;
+    final afterType = diagnostics['afterType'] as int? ?? 0;
+    final afterFuel = diagnostics['afterFuel'] as int? ?? 0;
+    final fuelAcrossAll = diagnostics['fuelAcrossAll'] as int? ?? 0;
+    final typeAcrossAll = diagnostics['typeAcrossAll'] as int? ?? 0;
+    final minFuelPrice = diagnostics['minPriceForPreferredFuel'] as double?;
+
+    final budget = widget.preferences.budget;
+    final hasBudgetConstraint = widget.preferences.hasBudgetConstraint;
+    final usage = widget.preferences.usageType;
+    final type = widget.preferences.carType;
+    final fuel = widget.preferences.fuelType;
+
+    if (hasBudgetConstraint && afterBudget == 0) {
+      return 'No cars are within your budget (RM ${budget.toStringAsFixed(0)}). Try increasing budget.';
+    }
+    if (afterUsage == 0) {
+      if (hasBudgetConstraint) {
+        return 'Cars exist in your budget, but none match usage "$usage" together with your other constraints.';
+      }
+      return 'No cars match usage "$usage" together with your selected type/fuel constraints.';
+    }
+    if (afterType == 0) {
+      if (type != 'any' && typeAcrossAll == 0) {
+        return 'No "$type" cars exist in the current dataset.';
+      }
+      return 'No "$type" cars remain after budget and usage filtering.';
+    }
+    if (afterFuel == 0) {
+      if (fuel != 'any' && fuelAcrossAll == 0) {
+        return 'No "$fuel" cars exist in the current dataset.';
+      }
+      if (hasBudgetConstraint && fuel != 'any' && minFuelPrice != null && minFuelPrice > budget) {
+        return '"$fuel" cars exist, but start from RM ${minFuelPrice.toStringAsFixed(0)}, above your budget RM ${budget.toStringAsFixed(0)}.';
+      }
+      return hasBudgetConstraint
+          ? 'Fuel filter "$fuel" removed the remaining cars. Try fuel "any" or increase budget.'
+          : 'Fuel filter "$fuel" removed the remaining cars. Try fuel "any".';
+    }
+
+    return 'No cars match your exact preferences. Try broadening one filter (usage, type, or fuel).';
   }
 
   Future<void> _generateExplanation() async {
@@ -148,21 +256,25 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.favorite_rounded),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => FavoritesScreen(favoriteCars: _favoriteCars),
-                ),
-              );
-            },
-            tooltip: 'My Favorites',
+            icon: const Icon(Icons.favorite),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+            ),
           ),
           IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: _loadAndRankCars,
-            tooltip: 'Refresh',
+            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => PreferenceSlidersScreen(preferences: widget.preferences)),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.admin_panel_settings),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CarManagementScreen()),
+            ),
           ),
         ],
       ),
@@ -193,17 +305,21 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
   }
 
   Widget _buildEmptyState() {
-    return Center(
+    return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const SizedBox(height: 32),
+            // Keep toggle visible so user can switch modes
+            _buildRecommendationModeToggle(),
+            const SizedBox(height: 32),
             Container(
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(24),
               ),
               child: const Icon(
@@ -274,6 +390,11 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
   Widget _buildResultsList() {
     return CustomScrollView(
       slivers: [
+        // Recommendation Mode Toggle
+        SliverToBoxAdapter(
+          child: _buildRecommendationModeToggle(),
+        ),
+
         // Summary Header
         SliverToBoxAdapter(
           child: _buildSummaryHeader(),
@@ -311,6 +432,41 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
           child: SizedBox(height: 32),
         ),
       ],
+    );
+  }
+
+  Widget _buildRecommendationModeToggle() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            'Classic',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Switch(
+            value: _useGemini,
+            onChanged: (value) {
+              setState(() {
+                _useGemini = value;
+              });
+              _loadAndRankCars();
+            },
+            activeTrackColor: Colors.black,
+            activeThumbColor: Colors.white,
+          ),
+          const Text(
+            'Gemini',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
     );
   }
 
@@ -387,7 +543,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.1)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,7 +613,7 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isTopPick ? Colors.black : Colors.black.withOpacity(0.1),
+          color: isTopPick ? Colors.black : Colors.black.withValues(alpha: 0.1),
           width: isTopPick ? 2 : 1,
         ),
       ),
@@ -518,10 +674,11 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
               spacing: 8,
               runSpacing: 8,
               children: [
-                _buildSpecChip(Icons.local_gas_station_rounded, '${car.fuelEconomy}L/100km'),
-                _buildSpecChip(Icons.shield_rounded, '${car.safetyRating}/5'),
+                _buildSpecChip(Icons.local_gas_station_rounded, '${car.fuelConsumption}L/100km'),
+                _buildSpecChip(Icons.shield_rounded, '${_getNumericSafetyRating(car.safetyRating)}/5'),
                 _buildSpecChip(Icons.people_rounded, '${car.seats} seats'),
                 _buildSpecChip(Icons.directions_car_rounded, car.type),
+                _buildSpecChip(Icons.bolt_rounded, car.fuelCategory.toUpperCase()),
               ],
             ),
           ),
@@ -530,12 +687,18 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
     );
   }
 
+  String _getNumericSafetyRating(String rating) {
+    if (rating.isEmpty) return 'N/A';
+    final match = RegExp(r'(\d+(\.\d+)?)').firstMatch(rating);
+    return match?.group(0) ?? 'N/A';
+  }
+
   Widget _buildRankBadge(int rank) {
     return Container(
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: rank == 1 ? Colors.black : Colors.black.withOpacity(0.7),
+        color: rank == 1 ? Colors.black : Colors.black.withValues(alpha: 0.7),
         borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
@@ -554,9 +717,9 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.05),
+        color: Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black.withOpacity(0.1)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -579,9 +742,9 @@ class _RecommendationResultsScreenState extends State<RecommendationResultsScree
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.05),
+        color: Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black.withOpacity(0.1)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

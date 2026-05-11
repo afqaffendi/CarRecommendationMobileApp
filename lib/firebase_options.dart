@@ -85,5 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'carrecommendationapp-c6e94.firebasestorage.app',
     measurementId: 'G-S8MS5PJMR8',
   );
-}
 
+}

@@ -19,7 +19,7 @@ class GeminiService {
   String _buildSystemPrompt() {
     final carList = _availableCars
         .map((c) =>
-            '${c.brand} ${c.model}: \$${c.price}, ${c.fuelEconomy}L/100km, '
+            '${c.brand} ${c.model}: \$${c.price}, ${c.fuelConsumption}L/100km, '
             '${c.seats} seats, ${c.bootSpace}L boot, ${c.safetyRating}/5 safety, '
             '${c.horsepower}hp')
         .join('\n');
@@ -83,7 +83,7 @@ Do not include any other text.
 
     final carDetails = carsToCompare
         .map((c) =>
-            '${c.brand} ${c.model}: \$${c.price}, ${c.fuelEconomy}L/100km, '
+            '${c.brand} ${c.model}: \$${c.price}, ${c.fuelConsumption}L/100km, '
             '${c.seats} seats, ${c.bootSpace}L boot, ${c.safetyRating}/5 safety, '
             '${c.horsepower}hp')
         .join('\n');
@@ -111,6 +111,26 @@ Include:
   /// Reset chat history
   void resetChat() {
     _chat = _model.startChat();
+  }
+
+  static Future<List<String>> getSimilarCars(Car car, List<Car> allCars) async {
+    final carStrings = allCars
+        .map((c) =>
+            '${c.brand} ${c.model}: \$${c.price}, ${c.fuelConsumption}L/100km, '
+            '${c.type}, ${c.seats} seats, ${c.engine}')
+        .toList();
+
+    return carStrings;
+  }
+
+  static Future<List<String>> getComparison(Car car1, Car car2) async {
+    final carStrings = [car1, car2]
+        .map((c) =>
+            '${c.brand} ${c.model}: \$${c.price}, ${c.fuelConsumption}L/100km, '
+            '${c.type}, ${c.seats} seats, ${c.engine}')
+        .toList();
+
+    return carStrings;
   }
 }
 

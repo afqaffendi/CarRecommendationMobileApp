@@ -36,7 +36,7 @@ dependencies:
   csv: ^6.0.0                  # To read your car spec file
   path_provider: ^2.1.2        # To find local storage paths
   cloudinary_public: ^0.23.1   # For Cloudinary image management
-  image_picker: ^1.0.7         # For picking images from gallery/camera
+  image_picker: ^1.1.2         # For picking images from gallery/camera
   http: ^1.1.2                 # For API requests
   flutter_dotenv: ^5.1.0       # For environment variables
   cached_network_image: ^3.3.1 # For efficient image loading

@@ -21,7 +21,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
     "nak kereta murah untuk kerja KL",
     "family car, safety penting, balik kampung selalu", 
     "first car fresh grad, jimat minyak",
-    "SUV bawah 120k, parking rumah besar",
+    "SUV bawah 120k untuk family",
   ];
 
   @override
@@ -67,10 +67,11 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
 
   void _proceedWithPreferences() {
     if (_parsedResult == null) return;
-    
+
     final prefs = _parserService.toUserPreferences(_parsedResult!);
+    prefs.originalInput = _textController.text.trim();
     DatabaseService.savePreferences(prefs);
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -282,7 +283,9 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
           _buildInfoRow(
             Icons.account_balance_wallet_rounded,
             'Budget',
-            'RM ${result.budget.toStringAsFixed(0)}',
+            result.hasBudgetConstraint
+                ? 'RM ${result.budget.toStringAsFixed(0)}'
+                : 'Not specified (open budget)',
           ),
           _buildInfoRow(
             Icons.route_rounded,
@@ -290,9 +293,14 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
             _formatUsageType(result.usageType),
           ),
           _buildInfoRow(
-            Icons.local_parking_rounded,
-            'Parking',
-            _formatParkingSpace(result.parkingSpace),
+            Icons.directions_car_rounded,
+            'Car Type',
+            _formatCarType(result.carType),
+          ),
+          _buildInfoRow(
+            Icons.local_gas_station_rounded,
+            'Fuel Type',
+            _formatFuelType(result.fuelType),
           ),
           
           const SizedBox(height: 24),
@@ -365,6 +373,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
             child: TextButton(
               onPressed: () {
                 final prefs = _parserService.toUserPreferences(result);
+                prefs.originalInput = _textController.text.trim();
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -499,12 +508,31 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
     }
   }
 
-  String _formatParkingSpace(String space) {
-    switch (space) {
-      case 'compact': return 'Compact/tight space';
-      case 'medium': return 'Standard parking';
-      case 'large': return 'Large space available';
-      default: return space;
+  String _formatCarType(String type) {
+    switch (type) {
+      case 'any': return 'Any type';
+      case 'sedan': return 'Sedan';
+      case 'suv': return 'SUV';
+      case 'mpv': return 'MPV';
+      case 'hatchback': return 'Hatchback';
+      case 'truck': return 'Truck';
+      case 'van': return 'Van';
+      default: return type;
+    }
+  }
+
+  String _formatFuelType(String type) {
+    switch (type) {
+      case 'any':
+        return 'Any fuel type';
+      case 'petrol':
+        return 'Petrol';
+      case 'ev':
+        return 'EV (Electric)';
+      case 'hybrid':
+        return 'Hybrid';
+      default:
+        return type;
     }
   }
 

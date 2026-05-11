@@ -59,8 +59,9 @@ class ImageManagementService {
         final updatedCar = Car(
           brand: car.brand,
           model: car.model,
+          engine: car.engine,
           price: car.price,
-          fuelEconomy: car.fuelEconomy,
+          fuelConsumption: car.fuelConsumption,
           seats: car.seats,
           bootSpace: car.bootSpace,
           safetyRating: car.safetyRating,
@@ -122,8 +123,9 @@ class ImageManagementService {
       final updatedCar = Car(
         brand: car.brand,
         model: car.model,
+        engine: car.engine,
         price: car.price,
-        fuelEconomy: car.fuelEconomy,
+        fuelConsumption: car.fuelConsumption,
         seats: car.seats,
         bootSpace: car.bootSpace,
         safetyRating: car.safetyRating,
