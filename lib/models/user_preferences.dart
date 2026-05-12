@@ -6,8 +6,9 @@ class UserPreferences {
   String carType;             // any, sedan, suv, mpv, hatchback, truck, van
   String fuelType;            // any, petrol, ev, hybrid
 
-  // Brand intent extracted from natural language
+  // Brand/model intent extracted from natural language
   String preferredBrand;      // '' = no preference, 'audi', 'bmw', etc.
+  String preferredModel;      // '' = no preference, 'vios', 'bezza', etc.
   bool showAll;               // true when user says "semua/all" + brand/type
 
   // The raw text the user typed — preserved so AI can understand original intent
@@ -30,6 +31,7 @@ class UserPreferences {
     this.carType = 'any',
     this.fuelType = 'any',
     this.preferredBrand = '',
+    this.preferredModel = '',
     this.showAll = false,
     this.originalInput = '',
     this.priceWeight = 0.5,
@@ -56,6 +58,7 @@ class UserPreferences {
     'carType': carType,
     'fuelType': fuelType,
     'preferredBrand': preferredBrand,
+    'preferredModel': preferredModel,
     'showAll': showAll,
     'originalInput': originalInput,
     'priceWeight': priceWeight,
@@ -77,6 +80,7 @@ class UserPreferences {
     carType: map['carType'] ?? _legacyParkingToType(map['parkingSpace']?.toString()),
     fuelType: map['fuelType'] ?? 'any',
     preferredBrand: map['preferredBrand']?.toString() ?? '',
+    preferredModel: map['preferredModel']?.toString() ?? '',
     showAll: map['showAll'] == true,
     originalInput: map['originalInput']?.toString() ?? '',
     priceWeight: map['priceWeight']?.toDouble() ?? 0.5,

@@ -60,6 +60,7 @@ Key interpretations:
 - "student/fresh grad/first car" → budget ~50000, fuel economy important
 - "family/keluarga" → safety important, more seats needed
 - Brand names like "Audi", "BMW", "Mercedes", "Toyota", "Honda", "Proton", "Perodua", "Hyundai", "Kia", "Mazda", "Volkswagen", "Volvo", "Lexus", "Tesla", "BYD", "Nissan", "Mitsubishi", "Subaru", "Suzuki" → set preferredBrand
+- Specific model names like "Vios", "Bezza", "Myvi", "Axia", "City", "Civic", "Saga", "X50", "Corolla", "Iriz", "Almera", "Yaris" → set preferredModel (lowercase). Also infer brand if known (e.g. "bezza" → brand "perodua", "myvi" → brand "perodua", "saga" → brand "proton").
 - "semua/all/semuanya/kesemua" combined with a brand or type → showAll = true (user wants to see all options)
 
 Return ONLY valid JSON, no other text:
@@ -69,6 +70,7 @@ Return ONLY valid JSON, no other text:
   "carType": "<any|sedan|suv|mpv|hatchback|truck|van>",
   "fuelType": "<any|petrol|ev|hybrid>",
   "preferredBrand": "<lowercase brand name or empty string>",
+  "preferredModel": "<lowercase model name or empty string>",
   "showAll": <true|false>,
   "priceImportance": <0.0-1.0>,
   "fuelImportance": <0.0-1.0>,
@@ -117,6 +119,7 @@ Return ONLY valid JSON, no other text:
         carType: parsed['carType'] as String? ?? 'any',
         fuelType: parsed['fuelType'] as String? ?? 'any',
         preferredBrand: (parsed['preferredBrand'] as String? ?? '').toLowerCase().trim(),
+        preferredModel: (parsed['preferredModel'] as String? ?? '').toLowerCase().trim(),
         showAll: parsed['showAll'] == true,
         priceImportance: (parsed['priceImportance'] as num?)?.toDouble() ?? 0.5,
         fuelImportance: (parsed['fuelImportance'] as num?)?.toDouble() ?? 0.5,
@@ -221,6 +224,7 @@ Return ONLY valid JSON, no other text:
       carType: carType,
       fuelType: fuelType,
       preferredBrand: detectedBrand,
+      preferredModel: '',
       showAll: showAll,
       priceImportance: price,
       fuelImportance: fuel,
@@ -276,6 +280,7 @@ Return ONLY valid JSON, no other text:
       carType: parsed.carType,
       fuelType: fuelType,
       preferredBrand: parsed.preferredBrand,
+      preferredModel: parsed.preferredModel,
       showAll: parsed.showAll,
       priceImportance: priceImportance,
       fuelImportance: parsed.fuelImportance,
@@ -295,7 +300,9 @@ Return ONLY valid JSON, no other text:
       carType: parsed.carType,
       fuelType: _normalizeFuelType(parsed.fuelType),
       preferredBrand: parsed.preferredBrand,
+      preferredModel: parsed.preferredModel,
       showAll: parsed.showAll,
+      originalInput: parsed.rawInput,
       priceWeight: parsed.priceImportance,
       fuelConsumptionWeight: parsed.fuelImportance,
       safetyWeight: parsed.safetyImportance,
@@ -349,6 +356,7 @@ class ParsedLifestyle {
   final String carType;
   final String fuelType;
   final String preferredBrand;
+  final String preferredModel;
   final bool showAll;
   final double priceImportance;
   final double fuelImportance;
@@ -365,6 +373,7 @@ class ParsedLifestyle {
     required this.carType,
     required this.fuelType,
     this.preferredBrand = '',
+    this.preferredModel = '',
     this.showAll = false,
     required this.priceImportance,
     required this.fuelImportance,

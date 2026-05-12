@@ -111,11 +111,8 @@ class _RecommendationResultsScreenState
       return;
     }
 
-    _rankedCars = List<RankedCar>.generate(recommendedCars.length, (index) {
-      final car = recommendedCars[index];
-      final score = 1.0 - (index / recommendedCars.length);
-      return RankedCar(car: car, score: score, rank: index + 1);
-    });
+    // Re-rank Groq's picks with TOPSIS so scores reflect actual user weights.
+    _rankedCars = TopsisService.rankCars(recommendedCars, widget.preferences);
   }
 
   Future<void> _runClassicFallback(List<Car> allCars) async {

@@ -1,9 +1,11 @@
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/car.dart';
 import '../models/user_preferences.dart';
 import 'firestore_service.dart';
 
 class DatabaseService {
   static final FirestoreService _firestore = FirestoreService();
+  static late Box _box;
 
   static final List<Car> _cachedCars = [];
   static final Set<String> _favoriteKeys = <String>{};
@@ -13,15 +15,18 @@ class DatabaseService {
 
   static bool get isInitialized => _isInitialized;
 
-  /// Marks the service ready without blocking on a network fetch.
-  static void initializeSync() {
+  static Future<void> initializeAsync() async {
+    if (_isInitialized) return;
+    _box = await Hive.openBox('app_data');
+    final savedFavorites = _box.get('favorites', defaultValue: <dynamic>[]);
+    _favoriteKeys.addAll(List<String>.from(savedFavorites as List));
+    final savedHistory = _box.get('search_history', defaultValue: <dynamic>[]);
+    _searchHistory.addAll(List<String>.from(savedHistory as List));
     _isInitialized = true;
   }
 
   static Future<void> initialize() async {
-    if (_isInitialized) return;
-    _isInitialized = true;
-    await refreshCarsFromFirestore();
+    await initializeAsync();
   }
 
   static Future<void> refreshCarsFromFirestore() async {
@@ -88,20 +93,24 @@ class DatabaseService {
     if (_searchHistory.length > 50) {
       _searchHistory.removeRange(50, _searchHistory.length);
     }
+    await _box.put('search_history', _searchHistory.toList());
   }
 
   static List<String> getSearchHistory() => List<String>.unmodifiable(_searchHistory);
 
   static Future<void> clearSearchHistory() async {
     _searchHistory.clear();
+    await _box.put('search_history', <String>[]);
   }
 
   static Future<void> addToFavorites(String carKey) async {
     _favoriteKeys.add(carKey);
+    await _box.put('favorites', _favoriteKeys.toList());
   }
 
   static Future<void> removeFromFavorites(String carKey) async {
     _favoriteKeys.remove(carKey);
+    await _box.put('favorites', _favoriteKeys.toList());
   }
 
   static bool isFavorite(String carKey) => _favoriteKeys.contains(carKey);

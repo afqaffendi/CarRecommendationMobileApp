@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'services/database_service.dart';
 import 'screens/lifestyle_input_screen.dart';
 import 'screens/favorites_screen.dart';
@@ -19,12 +21,19 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // Cache all Firestore reads to disk — works offline after first load.
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
+
+  await Hive.initFlutter();
+
   await Future.wait([
     _signInAnonymously(),
     dotenv.load(fileName: ".env"),
+    DatabaseService.initializeAsync(),
   ]);
-
-  DatabaseService.initializeSync();
 
   runApp(const MyApp());
 

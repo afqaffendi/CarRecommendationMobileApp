@@ -33,6 +33,33 @@ class GroqRecommendationService {
     return '';
   }
 
+  /// Returns the model keyword if the user mentioned a specific car model
+  /// that exists in the database. Checks longest model names first to prefer
+  /// specific matches (e.g. "Vios 1.5 E") over partial ones (e.g. "Vios").
+  String _extractModelFromInput(String input, List<Car> allCars) {
+    final lower = input.toLowerCase();
+
+    final candidates = <String>{};
+    for (final car in allCars) {
+      candidates.add(car.model.toLowerCase().trim());
+      final firstWord = car.model.toLowerCase().split(RegExp(r'[\s\-]+')).first;
+      if (firstWord.length >= 3) candidates.add(firstWord);
+    }
+
+    final sorted = candidates.toList()
+      ..sort((a, b) => b.length.compareTo(a.length));
+
+    for (final keyword in sorted) {
+      if (keyword.length < 3) continue;
+      final pattern = RegExp(
+        '(?<![a-zA-Z0-9])${RegExp.escape(keyword)}(?![a-zA-Z0-9])',
+        caseSensitive: false,
+      );
+      if (pattern.hasMatch(lower)) return keyword;
+    }
+    return '';
+  }
+
   bool _detectShowAll(String input) {
     final lower = input.toLowerCase();
     return RegExp(r'\b(semua|all|semuanya|kesemua|show all|tunjuk semua)\b').hasMatch(lower);
@@ -75,6 +102,27 @@ class GroqRecommendationService {
       final finalList = result.isNotEmpty ? result : brandCars;
       finalList.sort((a, b) => a.price.compareTo(b.price));
       return finalList;
+    }
+
+    // Specific model mentioned — return matching cars directly, no AI needed.
+    // Primary: Groq-parsed preferredModel. Secondary: regex scan of raw input.
+    final detectedModel = preferences.preferredModel.isNotEmpty
+        ? preferences.preferredModel
+        : _extractModelFromInput(preferences.originalInput, allCars);
+    if (detectedModel.isNotEmpty) {
+      var modelCars = allCars
+          .where((c) => c.model.toLowerCase().contains(detectedModel))
+          .toList();
+      if (modelCars.isEmpty) {
+        lastError = 'No cars matching "$detectedModel" found in the database.';
+        return [];
+      }
+      if (preferences.hasBudgetConstraint) {
+        final budgetFiltered = modelCars.where((c) => c.price <= preferences.budget).toList();
+        if (budgetFiltered.isNotEmpty) modelCars = budgetFiltered;
+      }
+      modelCars.sort((a, b) => a.price.compareTo(b.price));
+      return modelCars;
     }
 
     // Stage 1: Candidate selection
