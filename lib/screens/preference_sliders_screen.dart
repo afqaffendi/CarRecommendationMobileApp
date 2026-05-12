@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/user_preferences.dart';
 import '../services/database_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/animated_title.dart';
 import 'recommendation_results_screen.dart';
 
 class PreferenceSlidersScreen extends StatefulWidget {
@@ -41,21 +43,25 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'What matters most to you?',
-              style: TextStyle(
+            AnimatedTitle(
+              text: 'What matters\nmost to you?',
+              charDelayMs: 36,
+              style: const TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: Colors.black,
+                color: AppTheme.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Adjust sliders to prioritize your preferences',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black54,
-                height: 1.5,
+            AnimatedFadeSlide(
+              delay: const Duration(milliseconds: 1100),
+              child: const Text(
+                'Adjust sliders to prioritize your preferences',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppTheme.textSecondary,
+                  height: 1.5,
+                ),
               ),
             ),
             const SizedBox(height: 32),
@@ -101,7 +107,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
               child: FilledButton(
                 onPressed: _onGetRecommendations,
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.black,
+                  backgroundColor: AppTheme.accent,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -138,9 +144,9 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.warmSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.1)),
+        border: Border.all(color: AppTheme.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -151,10 +157,10 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: AppTheme.accentLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: Colors.white, size: 20),
+                child: Icon(icon, color: AppTheme.accent, size: 20),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -163,17 +169,17 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Colors.black,
+                        color: AppTheme.textPrimary,
                       ),
                     ),
                     Text(
                       subtitle,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
-                        color: Colors.black54,
+                        color: AppTheme.textSecondary,
                       ),
                     ),
                   ],
@@ -182,15 +188,15 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.05),
+                  color: AppTheme.accentLight,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.black.withOpacity(0.1)),
+                  border: Border.all(color: AppTheme.cardBorder),
                 ),
                 child: Text(
                   '${(value * 100).toInt()}%',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: AppTheme.accent,
                     fontSize: 14,
                   ),
                 ),
@@ -200,14 +206,12 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
           const SizedBox(height: 20),
           SliderTheme(
             data: SliderThemeData(
-              activeTrackColor: Colors.black,
-              inactiveTrackColor: Colors.black.withOpacity(0.1),
-              thumbColor: Colors.black,
-              overlayColor: Colors.black.withOpacity(0.1),
+              activeTrackColor: AppTheme.accent,
+              inactiveTrackColor: AppTheme.cardBorder,
+              thumbColor: AppTheme.accent,
+              overlayColor: AppTheme.accent.withValues(alpha: 0.15),
               trackHeight: 6,
-              thumbShape: const RoundSliderThumbShape(
-                enabledThumbRadius: 10,
-              ),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
             ),
             child: Slider(
               value: value,
@@ -220,20 +224,14 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Not Important',
-                style: TextStyle(
-                  color: Colors.black38,
-                  fontSize: 12,
-                ),
-              ),
-              Text(
-                'Very Important',
-                style: TextStyle(
-                  color: Colors.black38,
-                  fontSize: 12,
-                ),
-              ),
+              Text('Not Important',
+                  style: TextStyle(
+                      color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                      fontSize: 12)),
+              Text('Very Important',
+                  style: TextStyle(
+                      color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                      fontSize: 12)),
             ],
           ),
         ],
@@ -250,18 +248,19 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.warmSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.1)),
+        border: Border.all(color: AppTheme.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Weight Distribution',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
+              color: AppTheme.textPrimary,
             ),
           ),
           const SizedBox(height: 16),
@@ -274,45 +273,42 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
                   Expanded(
                     flex: pricePercent,
                     child: Container(
-                      color: Colors.black,
+                      color: AppTheme.accent,
                       alignment: Alignment.center,
                       child: Text(
                         '$pricePercent%',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500),
                       ),
                     ),
                   ),
                   Expanded(
                     flex: fuelPercent,
                     child: Container(
-                      color: Colors.black.withOpacity(0.7),
+                      color: AppTheme.accentBlue,
                       alignment: Alignment.center,
                       child: Text(
                         '$fuelPercent%',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500),
                       ),
                     ),
                   ),
                   Expanded(
                     flex: safetyPercent,
                     child: Container(
-                      color: Colors.black.withOpacity(0.5),
+                      color: const Color(0xFF4CAF82),
                       alignment: Alignment.center,
                       child: Text(
                         '$safetyPercent%',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500),
                       ),
                     ),
                   ),
@@ -324,9 +320,9 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildLegendItem(Colors.black, 'Price'),
-              _buildLegendItem(Colors.black.withOpacity(0.7), 'Fuel'),
-              _buildLegendItem(Colors.black.withOpacity(0.5), 'Safety'),
+              _buildLegendItem(AppTheme.accent, 'Price'),
+              _buildLegendItem(AppTheme.accentBlue, 'Fuel'),
+              _buildLegendItem(const Color(0xFF4CAF82), 'Safety'),
             ],
           ),
         ],
@@ -346,13 +342,8 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
           ),
         ),
         const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.black87,
-          ),
-        ),
+        Text(label,
+            style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
       ],
     );
   }
@@ -363,9 +354,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
     if (mounted) {
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (context) => RecommendationResultsScreen(preferences: _prefs),
-        ),
+        AppTheme.slideRoute(RecommendationResultsScreen(preferences: _prefs)),
       );
     }
   }

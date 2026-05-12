@@ -14,6 +14,7 @@ class Car {
   final String type;
   final int year;
   final String? imageUrl;
+  final String transmission;
 
   Car({
     required this.brand,
@@ -29,6 +30,7 @@ class Car {
     required this.type,
     required this.year,
     this.imageUrl,
+    this.transmission = 'Automatic',
   });
 
   factory Car.fromFirestore(DocumentSnapshot doc) {
@@ -58,6 +60,13 @@ class Car {
       return value.toInt();
     }
 
+    String inferTransmission(String engine) {
+      final e = engine.toLowerCase();
+      if (e.contains('cvt')) return 'CVT';
+      if (e.contains('manual') || RegExp(r'\d+mt\b').hasMatch(e)) return 'Manual';
+      return 'Automatic';
+    }
+
     String inferType(String model) {
       final m = model.toLowerCase();
       if (m.contains('suv') || m.contains('x50') || m.contains('x70') || m.contains('x90') || m.contains('hr-v') || m.contains('corolla cross')) return 'SUV';
@@ -70,11 +79,16 @@ class Car {
 
     final model = parseString(['model_name', 'Model', 'model']);
     final type = parseString(['car_type', 'Type', 'type'], inferType(model));
+    final engine = parseString(['engine_cap', 'Engine', 'engine']);
+    final transmission = parseString(
+      ['transmission', 'Transmission', 'trans'],
+      inferTransmission(engine),
+    );
 
     return Car(
       brand: parseString(['brand', 'Brand']),
       model: model,
-      engine: parseString(['engine_cap', 'Engine', 'engine']),
+      engine: engine,
       price: parseDouble(['price_car', 'Price (RM)', 'Price', 'price', 'priceRm']),
 
       fuelConsumption: parseDouble(['fuel_consumption_l_100km', 'fuelConsumption']),
@@ -87,6 +101,7 @@ class Car {
       imageUrl: parseString(['imageUrl', 'image_url']).isEmpty
           ? null
           : parseString(['imageUrl', 'image_url']),
+      transmission: transmission,
     );
   }
 
@@ -106,7 +121,7 @@ class Car {
   // Backward-compatibility getters for existing UI/services.
   String? get variant => null;
 
-  String get key => '${brand}_${model}';
+  String get key => '${brand}_$model';
 
   String get usageType {
     switch (type.toLowerCase()) {
@@ -164,6 +179,7 @@ class Car {
       'type': type,
       'year': year,
       'imageUrl': imageUrl,
+      'transmission': transmission,
       'displayName': displayName,
       'fuelCategory': fuelCategory,
       'usageType': usageType,

@@ -59,6 +59,8 @@ Key interpretations:
 - Numbers "50k/rm80000/100 ribu" → budget
 - "student/fresh grad/first car" → budget ~50000, fuel economy important
 - "family/keluarga" → safety important, more seats needed
+- Brand names like "Audi", "BMW", "Mercedes", "Toyota", "Honda", "Proton", "Perodua", "Hyundai", "Kia", "Mazda", "Volkswagen", "Volvo", "Lexus", "Tesla", "BYD", "Nissan", "Mitsubishi", "Subaru", "Suzuki" → set preferredBrand
+- "semua/all/semuanya/kesemua" combined with a brand or type → showAll = true (user wants to see all options)
 
 Return ONLY valid JSON, no other text:
 {
@@ -66,6 +68,8 @@ Return ONLY valid JSON, no other text:
   "usageType": "<city|highway|both>",
   "carType": "<any|sedan|suv|mpv|hatchback|truck|van>",
   "fuelType": "<any|petrol|ev|hybrid>",
+  "preferredBrand": "<lowercase brand name or empty string>",
+  "showAll": <true|false>,
   "priceImportance": <0.0-1.0>,
   "fuelImportance": <0.0-1.0>,
   "safetyImportance": <0.0-1.0>,
@@ -112,6 +116,8 @@ Return ONLY valid JSON, no other text:
         usageType: parsed['usageType'] as String? ?? 'both',
         carType: parsed['carType'] as String? ?? 'any',
         fuelType: parsed['fuelType'] as String? ?? 'any',
+        preferredBrand: (parsed['preferredBrand'] as String? ?? '').toLowerCase().trim(),
+        showAll: parsed['showAll'] == true,
         priceImportance: (parsed['priceImportance'] as num?)?.toDouble() ?? 0.5,
         fuelImportance: (parsed['fuelImportance'] as num?)?.toDouble() ?? 0.5,
         safetyImportance: (parsed['safetyImportance'] as num?)?.toDouble() ?? 0.5,
@@ -168,8 +174,9 @@ Return ONLY valid JSON, no other text:
     }
 
     String carType = 'any';
-    if (lower.contains('suv')) carType = 'suv';
-    else if (lower.contains('sedan')) carType = 'sedan';
+    if (lower.contains('suv')) {
+      carType = 'suv';
+    } else if (lower.contains('sedan')) carType = 'sedan';
     else if (lower.contains('hatchback')) carType = 'hatchback';
     else if (lower.contains('mpv')) carType = 'mpv';
     else if (lower.contains('truck')) carType = 'truck';
@@ -179,26 +186,32 @@ Return ONLY valid JSON, no other text:
 
     double price = 0.5, fuel = 0.5, safety = 0.5;
     if (lower.contains('cheap') || lower.contains('murah') || lower.contains('budget') ||
-        lower.contains('jimat') || lower.contains('affordable')) price = 0.9;
+        lower.contains('jimat') || lower.contains('affordable')) {
+      price = 0.9;
+    }
     if (lower.contains('fuel') || lower.contains('petrol') || lower.contains('minyak') ||
-        lower.contains('economy') || lower.contains('efficient')) fuel = 0.9;
+        lower.contains('economy') || lower.contains('efficient')) {
+      fuel = 0.9;
+    }
     if (lower.contains('safe') || lower.contains('family') || lower.contains('keluarga') ||
-        lower.contains('anak') || lower.contains('kid')) safety = 0.9;
+        lower.contains('anak') || lower.contains('kid')) {
+      safety = 0.9;
+    }
     if (lower.contains('mahal') || lower.contains('premium') || lower.contains('luxury') ||
         lower.contains('high-end') || lower.contains('atas')) {
       if (budget < 220000) budget = 220000;
       price = 0.15;
     }
 
+    final detectedBrand = _extractBrandFromText(lower);
+    final showAll = RegExp(r'\b(semua|all|semuanya|kesemua)\b').hasMatch(lower);
+
     final needs = <String>[];
     if (lower.contains('suv')) needs.add('SUV preference');
     if (lower.contains('sedan')) needs.add('Sedan preference');
     if (lower.contains('family')) needs.add('Family car');
     if (lower.contains('first car')) needs.add('First-time buyer');
-    if (lower.contains('proton')) needs.add('Proton brand interest');
-    if (lower.contains('perodua')) needs.add('Perodua brand interest');
-    if (lower.contains('honda')) needs.add('Honda brand interest');
-    if (lower.contains('toyota')) needs.add('Toyota brand interest');
+    if (detectedBrand.isNotEmpty) needs.add('${_capitalizeFirst(detectedBrand)} brand');
     if (needs.isEmpty) needs.add('General car search');
 
     return ParsedLifestyle(
@@ -207,17 +220,37 @@ Return ONLY valid JSON, no other text:
       usageType: usageType,
       carType: carType,
       fuelType: fuelType,
+      preferredBrand: detectedBrand,
+      showAll: showAll,
       priceImportance: price,
       fuelImportance: fuel,
       safetyImportance: safety,
       detectedNeeds: needs,
-      summary: hasBudgetConstraint
-          ? 'Looking for a car around RM${budget.toStringAsFixed(0)}'
-          : 'Looking for a car without a strict budget',
+      summary: detectedBrand.isNotEmpty
+          ? 'Looking for ${_capitalizeFirst(detectedBrand)} cars'
+          : hasBudgetConstraint
+              ? 'Looking for a car around RM${budget.toStringAsFixed(0)}'
+              : 'Looking for a car without a strict budget',
       confidence: 'medium',
       rawInput: rawInput ?? input,
     );
   }
+
+  String _extractBrandFromText(String lower) {
+    const brands = [
+      'audi', 'bmw', 'mercedes', 'volkswagen', 'toyota', 'honda',
+      'hyundai', 'kia', 'mazda', 'ford', 'proton', 'perodua', 'nissan',
+      'mitsubishi', 'suzuki', 'volvo', 'lexus', 'porsche', 'tesla',
+      'subaru', 'isuzu', 'chery', 'geely', 'byd', 'mg', 'peugeot',
+    ];
+    for (final brand in brands) {
+      if (RegExp('\\b${RegExp.escape(brand)}\\b').hasMatch(lower)) return brand;
+    }
+    return '';
+  }
+
+  String _capitalizeFirst(String s) =>
+      s.isEmpty ? s : '${s[0].toUpperCase()}${s.substring(1)}';
 
   ParsedLifestyle _applyIntentHeuristics(ParsedLifestyle parsed, String normalizedInput) {
     final lower = normalizedInput.toLowerCase();
@@ -242,6 +275,8 @@ Return ONLY valid JSON, no other text:
       usageType: parsed.usageType,
       carType: parsed.carType,
       fuelType: fuelType,
+      preferredBrand: parsed.preferredBrand,
+      showAll: parsed.showAll,
       priceImportance: priceImportance,
       fuelImportance: parsed.fuelImportance,
       safetyImportance: parsed.safetyImportance,
@@ -259,6 +294,8 @@ Return ONLY valid JSON, no other text:
       usageType: parsed.usageType,
       carType: parsed.carType,
       fuelType: _normalizeFuelType(parsed.fuelType),
+      preferredBrand: parsed.preferredBrand,
+      showAll: parsed.showAll,
       priceWeight: parsed.priceImportance,
       fuelConsumptionWeight: parsed.fuelImportance,
       safetyWeight: parsed.safetyImportance,
@@ -311,6 +348,8 @@ class ParsedLifestyle {
   final String usageType;
   final String carType;
   final String fuelType;
+  final String preferredBrand;
+  final bool showAll;
   final double priceImportance;
   final double fuelImportance;
   final double safetyImportance;
@@ -325,6 +364,8 @@ class ParsedLifestyle {
     required this.usageType,
     required this.carType,
     required this.fuelType,
+    this.preferredBrand = '',
+    this.showAll = false,
     required this.priceImportance,
     required this.fuelImportance,
     required this.safetyImportance,

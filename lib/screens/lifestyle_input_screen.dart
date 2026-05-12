@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/database_service.dart';
 import '../services/lifestyle_parser_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/animated_title.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/pressable_button.dart';
 import 'preference_sliders_screen.dart';
 
 class LifestyleInputScreen extends StatefulWidget {
@@ -69,16 +73,14 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
     DatabaseService.savePreferences(prefs);
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => PreferenceSlidersScreen(preferences: prefs),
-      ),
+      AppTheme.slideRoute(PreferenceSlidersScreen(preferences: prefs)),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppTheme.warmBackground,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -87,167 +89,209 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            const Text(
-              'What car\ndo you need?',
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-                height: 1.15,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Type in English, Malay, or mix — our AI understands you.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.black54,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 28),
-
-            // Text Input Card
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+      body: Stack(
+        children: [
+          _buildBackground(),
+          SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AnimatedTitle(
+                  text: 'What car\ndo you need?',
+                  charDelayMs: 38,
+                  style: const TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimary,
+                    height: 1.1,
+                    letterSpacing: -1.2,
                   ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _textController,
-                    focusNode: _focusNode,
-                    maxLines: 4,
-                    style: const TextStyle(fontSize: 16, height: 1.5),
-                    decoration: InputDecoration(
-                      hintText:
-                          'e.g. "nak kereta jimat minyak untuk kerja" or "SUV below 100k for family"...',
-                      hintStyle: TextStyle(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        fontSize: 15,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                ),
+                const SizedBox(height: 10),
+                AnimatedFadeSlide(
+                  delay: const Duration(milliseconds: 1050),
+                  child: const Text(
+                    'Type in English, Malay, or mix — our AI understands you.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: AppTheme.textSecondary,
+                      height: 1.5,
                     ),
-                    onChanged: (_) {
-                      if (_parsedResult != null) {
-                        setState(() => _parsedResult = null);
-                      }
-                    },
                   ),
-                  // Analyze button inside the card
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: FilledButton(
-                        onPressed: _isParsing ? null : _parseInput,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: _isParsing ? Colors.black38 : Colors.black,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                ),
+                const SizedBox(height: 28),
+
+                // Input glass card
+                GlassCard(
+                  padding: EdgeInsets.zero,
+                  blur: false,
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _textController,
+                        focusNode: _focusNode,
+                        maxLines: 4,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          height: 1.5,
+                          color: AppTheme.textPrimary,
+                        ),
+                        decoration: InputDecoration(
+                          hintText:
+                              'e.g. "nak kereta jimat minyak untuk kerja" or "SUV below 100k for family"...',
+                          hintStyle: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 14,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          contentPadding:
+                              const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                        ),
+                        onChanged: (_) {
+                          if (_parsedResult != null) {
+                            setState(() => _parsedResult = null);
+                          }
+                        },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: PressableButton(
+                            glass: true,
+                            borderRadius: BorderRadius.circular(14),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            onPressed: _isParsing ? null : _parseInput,
+                            child: _isParsing
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 17,
+                                        height: 17,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  AppTheme.accent),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        'Analyzing...',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          color: AppTheme.textPrimary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.auto_awesome_rounded,
+                                          size: 17, color: AppTheme.accent),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Analyze My Needs',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppTheme.textPrimary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                           ),
                         ),
-                        child: _isParsing
-                            ? const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor:
-                                          AlwaysStoppedAnimation<Color>(Colors.white),
-                                    ),
-                                  ),
-                                  SizedBox(width: 10),
-                                  Text('Analyzing...', style: TextStyle(fontSize: 15)),
-                                ],
-                              )
-                            : const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.auto_awesome_rounded, size: 18),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Analyze My Needs',
-                                    style: TextStyle(
-                                        fontSize: 15, fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
                       ),
-                    ),
+                    ],
                   ),
+                ),
+
+                if (_parsedResult != null) ...[
+                  const SizedBox(height: 24),
+                  _buildParsedResultsCard(),
+                ],
+
+                const SizedBox(height: 32),
+                const Text(
+                  'Try an example',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: _examplePrompts
+                        .map((e) => _buildExampleChip(e))
+                        .toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBackground() {
+    return Stack(
+      children: [
+        Positioned(
+          bottom: -80,
+          right: -60,
+          child: Container(
+            width: 280,
+            height: 280,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppTheme.accent.withValues(alpha: 0.30),
+                  Colors.transparent,
                 ],
               ),
             ),
-
-            // Parsed Results
-            if (_parsedResult != null) ...[
-              const SizedBox(height: 24),
-              _buildParsedResultsCard(),
-            ],
-
-            // Example Prompts — horizontal scroll
-            const SizedBox(height: 32),
-            const Text(
-              'Try an example',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 15,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: _examplePrompts
-                    .map((e) => _buildExampleChip(e))
-                    .toList(),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        Positioned(
+          top: 60,
+          left: -60,
+          child: Container(
+            width: 200,
+            height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [
+                  AppTheme.accentBlue.withValues(alpha: 0.25),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildParsedResultsCard() {
     final result = _parsedResult!;
 
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return GlassCard(
+      blur: false,
+      padding: const EdgeInsets.all(22),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -257,16 +301,22 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppTheme.accent,
+                  borderRadius: BorderRadius.circular(9),
                 ),
-                child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
+                child: const Icon(Icons.check_rounded,
+                    color: Colors.white, size: 18),
               ),
               const SizedBox(width: 12),
               const Expanded(
                 child: Text(
                   'Analysis Complete',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                    color: AppTheme.textPrimary,
+                    letterSpacing: -0.2,
+                  ),
                 ),
               ),
               _buildConfidenceBadge(result.confidence),
@@ -275,14 +325,17 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
           const SizedBox(height: 12),
           Text(
             result.summary,
-            style: TextStyle(color: Colors.black54, fontSize: 14, height: 1.5),
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 14,
+              height: 1.5,
+            ),
           ),
 
           const SizedBox(height: 20),
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+          const Divider(height: 1, color: AppTheme.cardBorder),
           const SizedBox(height: 20),
 
-          // Extracted values in a compact 2-column grid
           Row(
             children: [
               Expanded(
@@ -294,7 +347,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
                       : 'Open',
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: _buildInfoTile(
                   Icons.route_rounded,
@@ -304,7 +357,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -314,7 +367,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
                   _formatCarType(result.carType),
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
                 child: _buildInfoTile(
                   Icons.local_gas_station_rounded,
@@ -328,7 +381,11 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
           const SizedBox(height: 20),
           const Text(
             'Priority Weights',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+              color: AppTheme.textPrimary,
+            ),
           ),
           const SizedBox(height: 12),
           _buildPriorityBar('Price', result.priceImportance),
@@ -345,12 +402,16 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 5),
                         decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.05),
+                          color: AppTheme.accentLight,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           need,
-                          style: const TextStyle(fontSize: 12, color: Colors.black87),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.accent,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ))
                   .toList(),
@@ -360,17 +421,19 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
-            height: 52,
-            child: FilledButton(
+            child: PressableButton(
+              glass: true,
+              borderRadius: BorderRadius.circular(16),
+              padding: const EdgeInsets.symmetric(vertical: 16),
               onPressed: _proceedWithPreferences,
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: const Text(
+              child: Text(
                 'Continue with these preferences',
-                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  color: AppTheme.textPrimary,
+                ),
               ),
             ),
           ),
@@ -383,14 +446,13 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
                 prefs.originalInput = _textController.text.trim();
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => PreferenceSlidersScreen(preferences: prefs),
-                  ),
+                  AppTheme.slideRoute(
+                      PreferenceSlidersScreen(preferences: prefs)),
                 );
               },
               child: const Text(
                 'Adjust preferences manually',
-                style: TextStyle(fontSize: 13, color: Colors.black45),
+                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
               ),
             ),
           ),
@@ -403,7 +465,7 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
+        color: AppTheme.accentLight.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -411,17 +473,23 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
         children: [
           Row(
             children: [
-              Icon(icon, size: 14, color: Colors.black38),
+              Icon(icon, size: 13, color: AppTheme.textSecondary),
               const SizedBox(width: 4),
-              Text(label,
-                  style: const TextStyle(fontSize: 11, color: Colors.black38)),
+              Text(
+                label,
+                style: const TextStyle(
+                    fontSize: 11, color: AppTheme.textSecondary),
+              ),
             ],
           ),
           const SizedBox(height: 4),
           Text(
             value,
             style: const TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -437,8 +505,11 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
         children: [
           SizedBox(
             width: 88,
-            child: Text(label,
-                style: const TextStyle(fontSize: 13, color: Colors.black87)),
+            child: Text(
+              label,
+              style:
+                  const TextStyle(fontSize: 13, color: AppTheme.textPrimary),
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -447,8 +518,9 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
               child: LinearProgressIndicator(
                 value: value,
                 minHeight: 6,
-                backgroundColor: Colors.black.withValues(alpha: 0.06),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.black),
+                backgroundColor: AppTheme.accentLight.withValues(alpha: 0.5),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(AppTheme.accent),
               ),
             ),
           ),
@@ -457,7 +529,11 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
             width: 32,
             child: Text(
               '${(value * 100).toInt()}%',
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textSecondary,
+              ),
               textAlign: TextAlign.right,
             ),
           ),
@@ -472,20 +548,34 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
       child: GestureDetector(
         onTap: () => _useExample(example),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Colors.white.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
+            border: Border.all(
+                color: Colors.white.withValues(alpha: 0.14), width: 1.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.20),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.north_west_rounded, size: 12, color: Colors.black38),
+              const Icon(Icons.north_west_rounded,
+                  size: 11, color: AppTheme.accent),
               const SizedBox(width: 6),
               Text(
                 example,
-                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textPrimary,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -496,18 +586,22 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
 
   Widget _buildConfidenceBadge(String confidence) {
     Color bg;
+    Color textColor;
     String label;
     switch (confidence) {
       case 'high':
-        bg = Colors.black;
+        bg = AppTheme.accent;           // coral bg — stands out
+        textColor = Colors.white;
         label = 'High';
         break;
       case 'low':
-        bg = Colors.black38;
+        bg = const Color(0xFF3A3A3A);   // dark gray — clearly distinct from bg
+        textColor = AppTheme.textSecondary;
         label = 'Low';
         break;
       default:
-        bg = Colors.black87;
+        bg = AppTheme.accentBlue;       // purple bg — stands out, distinct from accent
+        textColor = Colors.white;
         label = 'Good';
     }
     return Container(
@@ -518,8 +612,11 @@ class _LifestyleInputScreenState extends State<LifestyleInputScreen> {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-            fontSize: 11, color: Colors.white, fontWeight: FontWeight.w500),
+        style: TextStyle(
+          fontSize: 11,
+          color: textColor,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

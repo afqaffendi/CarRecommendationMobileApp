@@ -308,150 +308,166 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
   void _showDetails(Car car) {
     final publicId =
         CloudinaryImageService.conventionPublicIdFor(car.brand, car.model);
+    final actualUrl = CloudinaryImageService.getCarImageUrl(car) ?? '';
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.black12,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            Text(car.displayName,
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('RM ${_formatPrice(car.price)}',
-                style:
-                    const TextStyle(fontSize: 14, color: Colors.black45)),
-
-            const SizedBox(height: 20),
-
-            // Image preview
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: CarImageWidget(
-                car: car,
-                width: double.infinity,
-                height: 200,
-                size: 'large',
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Status row
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 5),
+      builder: (_) => SingleChildScrollView(
+        child: Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
                   decoration: BoxDecoration(
-                    color: CloudinaryImageService.hasImage(car)
-                        ? Colors.green.withValues(alpha: 0.1)
-                        : Colors.orange.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        CloudinaryImageService.hasImage(car)
-                            ? Icons.check_circle_rounded
-                            : Icons.image_not_supported_rounded,
-                        size: 14,
-                        color: CloudinaryImageService.hasImage(car)
-                            ? Colors.green
-                            : Colors.orange,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        CloudinaryImageService.hasImage(car)
-                            ? 'Image available'
-                            : 'No image yet',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: CloudinaryImageService.hasImage(car)
-                              ? Colors.green
-                              : Colors.orange,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
+                    color: Colors.black12,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 20),
 
-            const SizedBox(height: 16),
+              Text(car.displayName,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('RM ${_formatPrice(car.price)}',
+                  style: const TextStyle(fontSize: 14, color: Colors.black45)),
+              const SizedBox(height: 20),
 
-            // Public ID to use for upload
-            const Text('Upload this file to Cloudinary:',
-                style:
-                    TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-            const SizedBox(height: 6),
-            GestureDetector(
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: '$publicId.jpg'));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Copied to clipboard'),
-                    behavior: SnackBarBehavior.floating,
-                    backgroundColor: Colors.black,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
+              // Image preview
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: CarImageWidget(
+                  car: car,
+                  width: double.infinity,
+                  height: 180,
+                  size: 'large',
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // ── Section 1: Expected Cloudinary public ID ──────────────
+              const Text('Expected Cloudinary public ID:',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              const SizedBox(height: 6),
+              _copyableBox(
+                text: publicId,
+                onCopy: () => _copy(context, publicId, 'Public ID copied'),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ── Section 2: Actual URL the app is requesting ───────────
+              const Text('URL the app is trying to load:',
+                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              const SizedBox(height: 4),
+              Text(
+                'Paste this in your browser — if it shows the image, the app will too.',
+                style: TextStyle(fontSize: 11, color: Colors.black38),
+              ),
+              const SizedBox(height: 6),
+              _copyableBox(
+                text: actualUrl,
+                onCopy: () => _copy(context, actualUrl, 'URL copied'),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ── Section 3: Checklist ──────────────────────────────────
+              Container(
+                padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                      color: Colors.black.withValues(alpha: 0.08)),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        '$publicId.jpg',
-                        style: const TextStyle(
-                            fontSize: 12,
-                            fontFamily: 'monospace',
-                            color: Colors.black87),
-                      ),
-                    ),
-                    const Icon(Icons.copy_rounded,
-                        size: 16, color: Colors.black38),
+                    const Text('Troubleshooting checklist:',
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 12)),
+                    const SizedBox(height: 8),
+                    _checkItem('Image is inside the car-images folder in Cloudinary'),
+                    _checkItem('Filename matches the public ID above (no extra suffix)'),
+                    _checkItem('Pasting the URL above in browser shows the image'),
                   ],
                 ),
               ),
-            ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-            const SizedBox(height: 24),
+  Widget _copyableBox({required String text, required VoidCallback onCopy}) {
+    return GestureDetector(
+      onTap: onCopy,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF5F5F5),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                text,
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontFamily: 'monospace',
+                    color: Colors.black87),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.copy_rounded, size: 15, color: Colors.black38),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _checkItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.check_box_outline_blank_rounded,
+              size: 14, color: Colors.black38),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text,
+                style: const TextStyle(fontSize: 12, color: Colors.black54)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _copy(BuildContext ctx, String text, String message) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(ctx).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.black,
+        duration: const Duration(seconds: 2),
       ),
     );
   }

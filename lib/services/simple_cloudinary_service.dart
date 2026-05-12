@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/car.dart';
 import 'cloudinary_image_map.dart';
@@ -17,8 +18,6 @@ import 'cloudinary_image_map.dart';
 /// already uploaded with arbitrary public IDs (with random suffixes).
 class CloudinaryImageService {
   static const String _baseUrl = 'https://res.cloudinary.com';
-  static const String _folder = 'car-images';
-
   static String get _cloudName =>
       dotenv.env['CLOUDINARY_CLOUD_NAME'] ?? '';
 
@@ -48,6 +47,7 @@ class CloudinaryImageService {
     }
 
     // Return convention URL — the widget will show the car icon if it 404s.
+    debugPrint('🖼 [Cloudinary] trying: $conventionUrl');
     return conventionUrl;
   }
 
@@ -72,13 +72,48 @@ class CloudinaryImageService {
     return '$_baseUrl/$_cloudName/image/upload/w_$w,h_$h,c_fill,q_$q,f_auto/$publicId';
   }
 
-  /// Derives a predictable public ID from the car's brand + full model string.
-  /// Upload your images to Cloudinary using this exact ID to avoid map maintenance.
-  static String _conventionPublicId(Car car) {
+  /// Returns all candidate URLs to try for a car, in order of most likely match.
+  static List<String> candidateUrls(Car car, int w, int h) {
+    if (!isConfigured) return [];
+    const base = 'https://res.cloudinary.com';
+    const t = 'c_fill,q_auto,f_auto';
+
+    // Legacy map — known-good URLs with random suffix.
+    final legacyId = CloudinaryImageMap.getPublicId(car.brand, car.model, car.variant);
+    if (legacyId != null) {
+      final fmt = CloudinaryImageMap.getImageFormat(legacyId);
+      return ['$base/$_cloudName/image/upload/w_$w,h_$h,$t/$legacyId.$fmt'];
+    }
+
+    // Convention candidates — try every pattern without extension (f_auto handles format).
+    return candidatePublicIds(car)
+        .map((id) => '$base/$_cloudName/image/upload/w_$w,h_$h,$t/$id')
+        .toList();
+  }
+
+  /// Returns all candidate public IDs to try for a car, from most to least specific.
+  static List<String> candidatePublicIds(Car car) {
     final brand = _clean(car.brand);
     final model = _clean(car.model);
-    return '$_folder/${brand}_$model';
+
+    // If the model starts with the brand name, also try a version without it.
+    final modelWithoutBrand = model.startsWith(brand)
+        ? model.substring(brand.length)
+        : model;
+
+    return [
+      // e.g. audi_audia3sedan20tfsissline  (brand + full model)
+      '${brand}_$model',
+      // e.g. audi_a3sedan20tfsissline      (brand + model minus leading brand)
+      if (modelWithoutBrand != model) '${brand}_$modelWithoutBrand',
+      // e.g. audia3sedan20tfsissline        (full model only)
+      model,
+      // e.g. a3sedan20tfsissline            (model minus leading brand)
+      if (modelWithoutBrand != model) modelWithoutBrand,
+    ]; // ordered by most likely match
   }
+
+  static String _conventionPublicId(Car car) => candidatePublicIds(car).first;
 
   static String _clean(String s) =>
       s.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
@@ -87,6 +122,7 @@ class CloudinaryImageService {
   static String conventionPublicIdFor(String brand, String model) {
     final b = brand.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
     final m = model.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-    return '$_folder/${b}_$m';
+    final mNoBrand = m.startsWith(b) ? m.substring(b.length) : m;
+    return '${b}_$mNoBrand';
   }
 }

@@ -6,7 +6,11 @@ class UserPreferences {
   String carType;             // any, sedan, suv, mpv, hatchback, truck, van
   String fuelType;            // any, petrol, ev, hybrid
 
-  // The raw text the user typed — preserved so Gemini can understand original intent
+  // Brand intent extracted from natural language
+  String preferredBrand;      // '' = no preference, 'audi', 'bmw', etc.
+  bool showAll;               // true when user says "semua/all" + brand/type
+
+  // The raw text the user typed — preserved so AI can understand original intent
   String originalInput;
 
   // Preference weights (0.0 - 1.0)
@@ -25,6 +29,8 @@ class UserPreferences {
     this.usageType = 'both',
     this.carType = 'any',
     this.fuelType = 'any',
+    this.preferredBrand = '',
+    this.showAll = false,
     this.originalInput = '',
     this.priceWeight = 0.5,
     this.fuelConsumptionWeight = 0.5,
@@ -49,6 +55,8 @@ class UserPreferences {
     'usageType': usageType,
     'carType': carType,
     'fuelType': fuelType,
+    'preferredBrand': preferredBrand,
+    'showAll': showAll,
     'originalInput': originalInput,
     'priceWeight': priceWeight,
     'fuelConsumptionWeight': fuelConsumptionWeight,
@@ -68,6 +76,8 @@ class UserPreferences {
     usageType: map['usageType'] ?? 'both',
     carType: map['carType'] ?? _legacyParkingToType(map['parkingSpace']?.toString()),
     fuelType: map['fuelType'] ?? 'any',
+    preferredBrand: map['preferredBrand']?.toString() ?? '',
+    showAll: map['showAll'] == true,
     originalInput: map['originalInput']?.toString() ?? '',
     priceWeight: map['priceWeight']?.toDouble() ?? 0.5,
     fuelConsumptionWeight: map['fuelConsumptionWeight']?.toDouble() ?? 0.5,

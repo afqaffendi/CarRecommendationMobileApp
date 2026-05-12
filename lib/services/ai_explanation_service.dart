@@ -91,6 +91,77 @@ Write 2-3 short paragraphs explaining why each car suits them and which is the b
     return buffer.toString();
   }
 
+  Future<String> explainSingleCar({
+    required Car car,
+    required UserPreferences prefs,
+    required int rank,
+  }) async {
+    final prompt = '''
+You are a Malaysian car recommendation expert. In 2-3 sentences, explain specifically why the ${car.displayName} suits this buyer.
+
+Buyer:
+- Budget: ${prefs.hasBudgetConstraint ? 'RM${prefs.budget.toStringAsFixed(0)}' : 'Open budget'}
+- Usage: ${prefs.usageType}
+- Priorities: Price ${(prefs.priceWeight * 100).toInt()}%, Fuel ${(prefs.fuelConsumptionWeight * 100).toInt()}%, Safety ${(prefs.safetyWeight * 100).toInt()}%
+
+Car (Rank #$rank):
+- ${car.displayName} — RM${car.price.toStringAsFixed(0)}
+- Engine: ${car.engine}, Transmission: ${car.transmission}
+- Fuel: ${car.fuelConsumption}L/100km (${car.fuelCategory})
+- Safety: ${car.safetyRating}, Seats: ${car.seats}, Power: ${car.horsepower.toStringAsFixed(0)}hp
+- Type: ${car.type}
+
+Be specific about why this car matches their priorities. Mention Malaysia context if relevant.''';
+
+    try {
+      final response = await http.post(
+        Uri.parse(_groqUrl),
+        headers: {
+          'Authorization': 'Bearer $apiKey',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'model': _groqModel,
+          'messages': [
+            {
+              'role': 'system',
+              'content': 'You are a concise car advisor for Malaysian buyers. Give personalized, specific explanations in 2-3 sentences only.',
+            },
+            {'role': 'user', 'content': prompt},
+          ],
+          'temperature': 0.6,
+          'max_tokens': 150,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return body['choices']?[0]?['message']?['content'] as String? ??
+            _fallbackSingleCar(car, prefs, rank);
+      }
+      return _fallbackSingleCar(car, prefs, rank);
+    } catch (e) {
+      return _fallbackSingleCar(car, prefs, rank);
+    }
+  }
+
+  String _fallbackSingleCar(Car car, UserPreferences prefs, int rank) {
+    final reasons = <String>[];
+    if (prefs.hasBudgetConstraint && car.price <= prefs.budget) {
+      reasons.add('fits within your budget of RM${prefs.budget.toStringAsFixed(0)}');
+    }
+    if (car.fuelConsumption > 0 && car.fuelConsumption < 7) {
+      reasons.add('excellent fuel economy at ${car.fuelConsumption}L/100km');
+    }
+    final safetyNum = double.tryParse(
+        RegExp(r'(\d+(\.\d+)?)').firstMatch(car.safetyRating)?.group(0) ?? '');
+    if (safetyNum != null && safetyNum >= 4) {
+      reasons.add('strong safety rating of ${car.safetyRating}');
+    }
+    if (reasons.isEmpty) reasons.add('a solid overall value for Malaysian buyers');
+    return 'The ${car.displayName} ranks #$rank and ${reasons.join(', ')}.';
+  }
+
   Future<String> compareCars(Car car1, Car car2, UserPreferences prefs) async {
     final prompt = '''
 Compare these two cars for a Malaysian buyer:

@@ -7,28 +7,27 @@ import 'screens/image_gallery_screen.dart';
 import 'package:car_recommendation_app/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'theme/app_theme.dart';
+import 'widgets/animated_title.dart';
+import 'widgets/glass_card.dart';
+import 'widgets/pressable_button.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Firebase must be first — everything else depends on it.
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Auth + dotenv are independent — run them in parallel.
   await Future.wait([
     _signInAnonymously(),
     dotenv.load(fileName: ".env"),
   ]);
 
-  // Mark service as ready without blocking on a network fetch.
   DatabaseService.initializeSync();
 
-  // Show the app immediately — cars load in the background.
   runApp(const MyApp());
 
-  // Warm the cache after the first frame is on screen.
   DatabaseService.refreshCarsFromFirestore();
 }
 
@@ -39,7 +38,7 @@ Future<void> _signInAnonymously() async {
       await auth.signInAnonymously();
     }
   } catch (e) {
-    print('Anonymous auth failed: $e');
+    debugPrint('Anonymous auth failed: $e');
   }
 }
 
@@ -50,321 +49,455 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Car Recommendation',
-      theme: ThemeData(
-        colorScheme: const ColorScheme.light(
-          brightness: Brightness.light,
-          primary: Colors.black,
-          onPrimary: Colors.white,
-          secondary: Color(0xFF2C2C2C),
-          onSecondary: Colors.white,
-          surface: Colors.white,
-          onSurface: Colors.black,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 0,
-          titleTextStyle: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            textStyle: const TextStyle(fontWeight: FontWeight.w500),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            textStyle: const TextStyle(fontWeight: FontWeight.w500),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-        textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: Colors.black54,
-          ),
-        ),
-        cardTheme: const CardThemeData(
-          color: Colors.white,
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(16)),
-          ),
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.theme,
       home: const HomeScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _fadeCtrl;
+  late final Animation<double> _fade;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeCtrl = AnimationController(
+      duration: const Duration(milliseconds: 700),
+      vsync: this,
+    );
+    _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _fadeCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _fadeCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Spacer(flex: 1),
-
-              // Logo + Brand
-              Row(
-                children: [
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.directions_car_rounded,
-                      size: 28,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'CarFinder',
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      Text(
-                        'Malaysia',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.black38,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 48),
-
-              // Hero headline
-              const Text(
-                'Find your\nperfect car.',
-                style: TextStyle(
-                  fontSize: 40,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                  height: 1.1,
+      backgroundColor: AppTheme.warmBackground,
+      body: Stack(
+        children: [
+          const _Background(),
+          SafeArea(
+            child: FadeTransition(
+              opacity: _fade,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Spacer(flex: 1),
+                    _buildBrand(),
+                    const SizedBox(height: 52),
+                    _buildHero(),
+                    const SizedBox(height: 36),
+                    _buildFeatureGlassCard(),
+                    const Spacer(flex: 2),
+                    _buildActions(),
+                    const SizedBox(height: 40),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                'AI-powered recommendations tailored\nfor Malaysian buyers.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
-                  height: 1.6,
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              // Feature cards row
-              Row(
-                children: [
-                  _FeatureCard(
-                    icon: Icons.psychology_rounded,
-                    label: 'Natural\nLanguage',
-                  ),
-                  const SizedBox(width: 12),
-                  _FeatureCard(
-                    icon: Icons.tune_rounded,
-                    label: 'Smart\nFiltering',
-                  ),
-                  const SizedBox(width: 12),
-                  _FeatureCard(
-                    icon: Icons.leaderboard_rounded,
-                    label: 'TOPSIS\nRanking',
-                  ),
-                ],
-              ),
-
-              const Spacer(flex: 2),
-
-              // CTA Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: FilledButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const LifestyleInputScreen(),
-                    ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Find My Car',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward_rounded, size: 20),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Secondary links
-              Row(
-                children: [
-                  Expanded(
-                    child: _SecondaryButton(
-                      icon: Icons.favorite_rounded,
-                      label: 'Favorites',
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const FavoritesScreen()),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _SecondaryButton(
-                      icon: Icons.photo_library_rounded,
-                      label: 'Car Gallery',
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ImageGalleryScreen()),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
-}
 
-class _FeatureCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _FeatureCard({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+  Widget _buildBrand() {
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppTheme.accentLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.cardBorder),
+          ),
+          child: const Icon(
+            Icons.directions_car_rounded,
+            size: 22,
+            color: AppTheme.accent,
+          ),
         ),
-        child: Column(
-          children: [
-            Icon(icon, size: 24, color: Colors.black87),
-            const SizedBox(height: 8),
+        const SizedBox(width: 12),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
             Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 11,
+              'CarFinder',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+                letterSpacing: -0.3,
+              ),
+            ),
+            Text(
+              'MALAYSIA',
+              style: TextStyle(
+                fontSize: 10,
+                color: AppTheme.textSecondary,
+                letterSpacing: 1.6,
                 fontWeight: FontWeight.w500,
-                color: Colors.black54,
-                height: 1.3,
               ),
             ),
           ],
         ),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.accentLight,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text(
+            'AI Powered',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.accent,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHero() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AnimatedTitle(
+          text: 'Find your\nperfect car.',
+          delay: const Duration(milliseconds: 250),
+          charDelayMs: 40,
+          style: const TextStyle(
+            fontSize: 44,
+            fontWeight: FontWeight.w800,
+            color: AppTheme.textPrimary,
+            height: 1.05,
+            letterSpacing: -1.5,
+          ),
+        ),
+        const SizedBox(height: 16),
+        AnimatedFadeSlide(
+          delay: const Duration(milliseconds: 1300),
+          child: const Text(
+            'AI-powered recommendations\ntailored for Malaysian buyers.',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppTheme.textSecondary,
+              height: 1.6,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureGlassCard() {
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+      child: Column(
+        children: [
+          const _FeatureRow(
+            icon: Icons.psychology_rounded,
+            label: 'Natural Language',
+            description: 'Describe your needs in plain text',
+          ),
+          const Divider(height: 24, color: AppTheme.divider),
+          const _FeatureRow(
+            icon: Icons.tune_rounded,
+            label: 'Smart Filtering',
+            description: 'Auto-adjust preferences with AI',
+          ),
+          const Divider(height: 24, color: AppTheme.divider),
+          const _FeatureRow(
+            icon: Icons.leaderboard_rounded,
+            label: 'TOPSIS Ranking',
+            description: 'Multi-criteria decision analysis',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActions() {
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: PressableButton(
+            glass: true,
+            borderRadius: BorderRadius.circular(18),
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            onPressed: () => Navigator.push(
+              context,
+              AppTheme.slideRoute(const LifestyleInputScreen()),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Find My Car',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Icon(Icons.arrow_forward_rounded,
+                    size: 20, color: AppTheme.accent),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _GlassSecondaryButton(
+                icon: Icons.favorite_rounded,
+                label: 'Favorites',
+                onTap: () => Navigator.push(
+                  context,
+                  AppTheme.slideRoute(const FavoritesScreen()),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _GlassSecondaryButton(
+                icon: Icons.photo_library_rounded,
+                label: 'Car Gallery',
+                onTap: () => Navigator.push(
+                  context,
+                  AppTheme.slideRoute(const ImageGalleryScreen()),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _Background extends StatelessWidget {
+  const _Background();
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: Stack(
+        children: [
+          // Coral glow — bottom right
+          Positioned(
+            bottom: -100,
+            right: -80,
+            child: Container(
+              width: 340,
+              height: 340,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.accent.withValues(alpha: 0.28),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Purple orb — mid left
+          Positioned(
+            top: 180,
+            left: -80,
+            child: Container(
+              width: 270,
+              height: 270,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.accentBlue.withValues(alpha: 0.22),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Subtle coral top-right
+          Positioned(
+            top: -70,
+            right: 30,
+            child: Container(
+              width: 230,
+              height: 230,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.accent.withValues(alpha: 0.12),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _SecondaryButton extends StatelessWidget {
+class _FeatureRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String description;
+
+  const _FeatureRow({
+    required this.icon,
+    required this.label,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: AppTheme.accentLight,
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(
+              color: AppTheme.cardBorder,
+              width: 1,
+            ),
+          ),
+          child: Icon(icon, size: 19, color: AppTheme.accent),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.1,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                description,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Icon(Icons.chevron_right_rounded,
+            size: 16, color: AppTheme.textSecondary),
+      ],
+    );
+  }
+}
+
+class _GlassSecondaryButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
 
-  const _SecondaryButton({
+  const _GlassSecondaryButton({
     required this.icon,
     required this.label,
     required this.onTap,
   });
 
   @override
+  State<_GlassSecondaryButton> createState() => _GlassSecondaryButtonState();
+}
+
+class _GlassSecondaryButtonState extends State<_GlassSecondaryButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      reverseDuration: const Duration(milliseconds: 220),
+      vsync: this,
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18, color: Colors.black54),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.black54,
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) {
+        _ctrl.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _ctrl.reverse(),
+      child: ScaleTransition(
+        scale: _scale,
+        child: GlassCard(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          borderRadius: BorderRadius.circular(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(widget.icon, size: 16, color: AppTheme.textSecondary),
+              const SizedBox(width: 8),
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textSecondary,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

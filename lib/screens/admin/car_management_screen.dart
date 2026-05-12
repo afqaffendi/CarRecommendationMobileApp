@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../models/car.dart';
 import '../../services/image_management_service.dart';
 import 'image_status_screen.dart';
@@ -82,7 +81,7 @@ class _CarManagementScreenState extends State<CarManagementScreen> {
             children: [
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedBrand,
+                  initialValue: _selectedBrand,
                   items: _brands.map((brand) {
                     return DropdownMenuItem(value: brand, child: Text(brand));
                   }).toList(),
@@ -100,7 +99,7 @@ class _CarManagementScreenState extends State<CarManagementScreen> {
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: _selectedType,
+                  initialValue: _selectedType,
                   items: _types.map((type) {
                     return DropdownMenuItem(value: type, child: Text(type));
                   }).toList(),
