@@ -4,6 +4,7 @@ import '../models/car.dart';
 import '../services/database_service.dart';
 import '../services/firestore_service.dart';
 import '../services/simple_cloudinary_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/car_image_widget.dart';
 
 class ImageGalleryScreen extends StatefulWidget {
@@ -43,8 +44,11 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load cars: $e'),
-            backgroundColor: Colors.red,
+            content: Text('Failed to load cars: $e',
+                style: const TextStyle(color: AppTheme.textPrimary)),
+            backgroundColor: const Color(0xFFE53935),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
       }
@@ -68,11 +72,12 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
   Widget build(BuildContext context) {
     final filtered = _filtered;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text('Car Gallery',
-            style: TextStyle(fontWeight: FontWeight.w600)),
+        title: const Text('Car Gallery'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_rounded),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
@@ -83,7 +88,8 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       ),
       body: _isLoading
           ? const Center(
-              child: CircularProgressIndicator(color: Colors.black))
+              child: CircularProgressIndicator(color: AppTheme.accent),
+            )
           : Column(
               children: [
                 _buildHeader(),
@@ -92,7 +98,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                   child: filtered.isEmpty
                       ? _buildEmptyState()
                       : GridView.builder(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                           gridDelegate:
                               const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 2,
@@ -118,9 +124,9 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+        color: AppTheme.warmSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.cardBorder),
       ),
       child: Row(
         children: [
@@ -131,7 +137,10 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                 Text(
                   '$covered / $total cars with images',
                   style: const TextStyle(
-                      fontWeight: FontWeight.w600, fontSize: 14),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 ClipRRect(
@@ -139,20 +148,29 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                   child: LinearProgressIndicator(
                     value: pct,
                     minHeight: 6,
-                    backgroundColor:
-                        Colors.black.withValues(alpha: 0.08),
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(Colors.black),
+                    backgroundColor: AppTheme.accentLight,
+                    valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.accent),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 16),
-          Text(
-            '${(pct * 100).toStringAsFixed(0)}%',
-            style: const TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTheme.accentLight,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppTheme.cardBorder),
+            ),
+            child: Text(
+              '${(pct * 100).toStringAsFixed(0)}%',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: AppTheme.accent,
+              ),
+            ),
           ),
         ],
       ),
@@ -164,26 +182,25 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: TextField(
         onChanged: (v) => setState(() => _filter = v),
+        style: const TextStyle(color: AppTheme.textPrimary),
         decoration: InputDecoration(
           hintText: 'Search brand or model...',
-          prefixIcon: const Icon(Icons.search_rounded, size: 20),
+          hintStyle: TextStyle(color: AppTheme.textSecondary.withValues(alpha: 0.5)),
+          prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppTheme.textSecondary),
           filled: true,
-          fillColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+          fillColor: AppTheme.warmSurface,
+          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+            borderSide: const BorderSide(color: AppTheme.cardBorder),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: Colors.black.withValues(alpha: 0.08)),
+            borderSide: const BorderSide(color: AppTheme.cardBorder),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.black),
+            borderSide: const BorderSide(color: AppTheme.accent),
           ),
         ),
       ),
@@ -195,11 +212,22 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.photo_library_outlined, size: 64, color: Colors.black12),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: AppTheme.accentLight,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.photo_library_rounded,
+              size: 48,
+              color: AppTheme.accent,
+            ),
+          ),
           const SizedBox(height: 16),
           Text(
             _filter.isEmpty ? 'No cars found' : 'No results for "$_filter"',
-            style: const TextStyle(fontSize: 16, color: Colors.black45),
+            style: const TextStyle(fontSize: 16, color: AppTheme.textSecondary),
           ),
         ],
       ),
@@ -213,11 +241,9 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       onTap: () => _showDetails(car),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.warmSurface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.black.withValues(alpha: 0.07),
-          ),
+          border: Border.all(color: AppTheme.cardBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -228,8 +254,8 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
               child: Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(15)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(15)),
                     child: CarImageWidget(
                       car: car,
                       width: double.infinity,
@@ -238,7 +264,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                       borderRadius: BorderRadius.zero,
                     ),
                   ),
-                  // Image status indicator
+                  // Image status dot
                   Positioned(
                     top: 8,
                     right: 8,
@@ -247,8 +273,8 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                       height: 20,
                       decoration: BoxDecoration(
                         color: hasImage
-                            ? Colors.green.withValues(alpha: 0.9)
-                            : Colors.orange.withValues(alpha: 0.9),
+                            ? const Color(0xFF4CAF82).withValues(alpha: 0.9)
+                            : const Color(0xFFFFB74D).withValues(alpha: 0.9),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -272,10 +298,11 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                   children: [
                     Text(
                       car.brand,
-                      style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.black38,
-                          fontWeight: FontWeight.w500),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                        fontWeight: FontWeight.w500,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -283,7 +310,10 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                     Text(
                       car.model,
                       style: const TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.bold),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -291,9 +321,10 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
                     Text(
                       'RM ${_formatPrice(car.price)}',
                       style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black54),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.accent,
+                      ),
                     ),
                   ],
                 ),
@@ -317,7 +348,7 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
       builder: (_) => SingleChildScrollView(
         child: Container(
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: AppTheme.warmSurface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
@@ -325,24 +356,32 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Handle bar
               Center(
                 child: Container(
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.black12,
+                    color: AppTheme.cardBorder,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
 
-              Text(car.displayName,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                car.displayName,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('RM ${_formatPrice(car.price)}',
-                  style: const TextStyle(fontSize: 14, color: Colors.black45)),
+              Text(
+                'RM ${_formatPrice(car.price)}',
+                style: const TextStyle(fontSize: 14, color: AppTheme.accent),
+              ),
               const SizedBox(height: 20),
 
               // Image preview
@@ -358,9 +397,15 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ── Section 1: Expected Cloudinary public ID ──────────────
-              const Text('Expected Cloudinary public ID:',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              // Expected Cloudinary public ID
+              const Text(
+                'Expected Cloudinary public ID:',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
               const SizedBox(height: 6),
               _copyableBox(
                 text: publicId,
@@ -369,13 +414,22 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
 
               const SizedBox(height: 16),
 
-              // ── Section 2: Actual URL the app is requesting ───────────
-              const Text('URL the app is trying to load:',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              // URL the app is requesting
+              const Text(
+                'URL the app is trying to load:',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 'Paste this in your browser — if it shows the image, the app will too.',
-                style: TextStyle(fontSize: 11, color: Colors.black38),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                ),
               ),
               const SizedBox(height: 6),
               _copyableBox(
@@ -385,19 +439,25 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
 
               const SizedBox(height: 16),
 
-              // ── Section 3: Checklist ──────────────────────────────────
+              // Troubleshooting checklist
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: AppTheme.accentLight,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.cardBorder),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Troubleshooting checklist:',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600, fontSize: 12)),
+                    const Text(
+                      'Troubleshooting checklist:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     _checkItem('Image is inside the car-images folder in Cloudinary'),
                     _checkItem('Filename matches the public ID above (no extra suffix)'),
@@ -419,23 +479,24 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
         width: double.infinity,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
+          color: AppTheme.accentLight,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+          border: Border.all(color: AppTheme.cardBorder),
         ),
         child: Row(
           children: [
             Expanded(
               child: Text(
                 text,
-                style: const TextStyle(
-                    fontSize: 11,
-                    fontFamily: 'monospace',
-                    color: Colors.black87),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: AppTheme.textSecondary.withValues(alpha: 0.85),
+                ),
               ),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.copy_rounded, size: 15, color: Colors.black38),
+            const Icon(Icons.copy_rounded, size: 15, color: AppTheme.accent),
           ],
         ),
       ),
@@ -449,11 +510,13 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.check_box_outline_blank_rounded,
-              size: 14, color: Colors.black38),
+              size: 14, color: AppTheme.accent),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(text,
-                style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+            ),
           ),
         ],
       ),
@@ -464,9 +527,13 @@ class _ImageGalleryScreenState extends State<ImageGalleryScreen> {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(ctx).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Text(message, style: const TextStyle(color: AppTheme.textPrimary)),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: Colors.black,
+        backgroundColor: AppTheme.warmSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: AppTheme.cardBorder),
+        ),
         duration: const Duration(seconds: 2),
       ),
     );

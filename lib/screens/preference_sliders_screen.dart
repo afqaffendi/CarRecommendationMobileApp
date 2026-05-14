@@ -17,10 +17,55 @@ class PreferenceSlidersScreen extends StatefulWidget {
 class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
   late UserPreferences _prefs;
 
+  static const double _budgetMax = 500000;
+  static const double _budgetStep = 10000;
+  // Fallback if car cache is empty
+  static const double _budgetFallbackMin = 30000;
+
+  late double _budgetMin;
+
   @override
   void initState() {
     super.initState();
     _prefs = widget.preferences;
+    _budgetMin = _computeBudgetMin();
+    _prefs.budget = _prefs.budget.clamp(_budgetMin, _budgetMax);
+    _prefs.budget = (_prefs.budget / _budgetStep).round() * _budgetStep;
+  }
+
+  // Derives the minimum budget from the cheapest car in the dataset.
+  // Rounds UP to the nearest step so the minimum always returns at least one car.
+  double _computeBudgetMin() {
+    final cars = DatabaseService.getCachedCars();
+    if (cars.isEmpty) return _budgetFallbackMin;
+    final cheapest = cars.map((c) => c.price).reduce((a, b) => a < b ? a : b);
+    final stepped = (cheapest / _budgetStep).ceil() * _budgetStep;
+    return stepped.clamp(_budgetFallbackMin, _budgetMax - _budgetStep);
+  }
+
+  String _formatRM(double value) {
+    final int v = value.toInt();
+    final String s = v.toString();
+    final buffer = StringBuffer();
+    for (int i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buffer.write(',');
+      buffer.write(s[i]);
+    }
+    return 'RM ${buffer.toString()}';
+  }
+
+  String _fuelEconomyLabel(double weight) {
+    if (weight < 0.05) return 'Any';
+    // Maps 0→20 L/100km (any) to 1→6 L/100km (very efficient)
+    final lPer100 = (20 - weight * 14).clamp(6.0, 20.0);
+    return '≤ ${lPer100.toStringAsFixed(0)} L/100km';
+  }
+
+  String _safetyLabel(double weight) {
+    if (weight < 0.1) return 'Any';
+    // Maps 0.1→1.0 to 1–5 stars
+    final stars = (weight * 4 + 1).clamp(1.0, 5.0).round();
+    return '${'★' * stars}${'☆' * (5 - stars)}';
   }
 
   @override
@@ -56,7 +101,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
             AnimatedFadeSlide(
               delay: const Duration(milliseconds: 1100),
               child: const Text(
-                'Adjust sliders to prioritize your preferences',
+                'Adjust sliders to fine-tune your preferences',
                 style: TextStyle(
                   fontSize: 16,
                   color: AppTheme.textSecondary,
@@ -66,37 +111,55 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
             ),
             const SizedBox(height: 32),
 
-            // Price Priority Slider
+            // Budget Slider — actual RM range, minimum locked to cheapest car
             _buildSliderSection(
               icon: Icons.attach_money_rounded,
-              title: 'Price',
-              subtitle: 'Lower price cars ranked higher',
-              value: _prefs.priceWeight,
-              onChanged: (v) => setState(() => _prefs.priceWeight = v),
+              title: 'Budget',
+              subtitle: 'Maximum price you\'re willing to pay',
+              value: _prefs.budget,
+              min: _budgetMin,
+              max: _budgetMax,
+              divisions: ((_budgetMax - _budgetMin) / _budgetStep).round(),
+              displayLabel: _formatRM(_prefs.budget),
+              minLabel: _formatRM(_budgetMin),
+              maxLabel: _formatRM(_budgetMax),
+              onChanged: (v) => setState(() => _prefs.budget = v),
             ),
             const SizedBox(height: 24),
 
-            // Fuel Economy Slider
+            // Fuel Economy Slider — L/100km equivalent
             _buildSliderSection(
               icon: Icons.local_gas_station_rounded,
               title: 'Fuel Economy',
-              subtitle: 'Better mileage ranked higher',
+              subtitle: 'Target fuel consumption',
               value: _prefs.fuelConsumptionWeight,
+              min: 0,
+              max: 1,
+              divisions: 10,
+              displayLabel: _fuelEconomyLabel(_prefs.fuelConsumptionWeight),
+              minLabel: 'Not Important',
+              maxLabel: '≤ 6 L/100km',
               onChanged: (v) => setState(() => _prefs.fuelConsumptionWeight = v),
             ),
             const SizedBox(height: 24),
 
-            // Safety Slider
+            // Safety Slider — star rating priority
             _buildSliderSection(
               icon: Icons.health_and_safety_rounded,
               title: 'Safety',
-              subtitle: 'Higher safety rating ranked higher',
+              subtitle: 'NCAP star rating priority',
               value: _prefs.safetyWeight,
+              min: 0,
+              max: 1,
+              divisions: 10,
+              displayLabel: _safetyLabel(_prefs.safetyWeight),
+              minLabel: 'Not Important',
+              maxLabel: '5 Stars Only',
               onChanged: (v) => setState(() => _prefs.safetyWeight = v),
             ),
             const SizedBox(height: 32),
 
-            // Weight Distribution Summary
+            // Priority Distribution (Fuel vs Safety)
             _buildWeightSummary(),
             const SizedBox(height: 40),
 
@@ -139,6 +202,12 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
     required String title,
     required String subtitle,
     required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required String displayLabel,
+    required String minLabel,
+    required String maxLabel,
     required ValueChanged<double> onChanged,
   }) {
     return Container(
@@ -193,11 +262,11 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
                   border: Border.all(color: AppTheme.cardBorder),
                 ),
                 child: Text(
-                  '${(value * 100).toInt()}%',
+                  displayLabel,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     color: AppTheme.accent,
-                    fontSize: 14,
+                    fontSize: 13,
                   ),
                 ),
               ),
@@ -215,20 +284,20 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
             ),
             child: Slider(
               value: value,
-              min: 0,
-              max: 1,
-              divisions: 10,
+              min: min,
+              max: max,
+              divisions: divisions,
               onChanged: onChanged,
             ),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Not Important',
+              Text(minLabel,
                   style: TextStyle(
                       color: AppTheme.textSecondary.withValues(alpha: 0.7),
                       fontSize: 12)),
-              Text('Very Important',
+              Text(maxLabel,
                   style: TextStyle(
                       color: AppTheme.textSecondary.withValues(alpha: 0.7),
                       fontSize: 12)),
@@ -240,10 +309,9 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
   }
 
   Widget _buildWeightSummary() {
-    final total = _prefs.priceWeight + _prefs.fuelConsumptionWeight + _prefs.safetyWeight;
-    final pricePercent = total > 0 ? (_prefs.priceWeight / total * 100).toInt() : 33;
-    final fuelPercent = total > 0 ? (_prefs.fuelConsumptionWeight / total * 100).toInt() : 33;
-    final safetyPercent = total > 0 ? (_prefs.safetyWeight / total * 100).toInt() : 34;
+    final total = _prefs.fuelConsumptionWeight + _prefs.safetyWeight;
+    final fuelPercent = total > 0 ? (_prefs.fuelConsumptionWeight / total * 100).toInt() : 50;
+    final safetyPercent = total > 0 ? (_prefs.safetyWeight / total * 100).toInt() : 50;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -256,11 +324,19 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Weight Distribution',
+            'Priority Distribution',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
               color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Relative weight between fuel economy and safety',
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondary.withValues(alpha: 0.7),
             ),
           ),
           const SizedBox(height: 16),
@@ -270,20 +346,6 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
               height: 32,
               child: Row(
                 children: [
-                  Expanded(
-                    flex: pricePercent,
-                    child: Container(
-                      color: AppTheme.accent,
-                      alignment: Alignment.center,
-                      child: Text(
-                        '$pricePercent%',
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  ),
                   Expanded(
                     flex: fuelPercent,
                     child: Container(
@@ -320,8 +382,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildLegendItem(AppTheme.accent, 'Price'),
-              _buildLegendItem(AppTheme.accentBlue, 'Fuel'),
+              _buildLegendItem(AppTheme.accentBlue, 'Fuel Economy'),
               _buildLegendItem(const Color(0xFF4CAF82), 'Safety'),
             ],
           ),
@@ -350,7 +411,7 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
 
   Future<void> _onGetRecommendations() async {
     await DatabaseService.savePreferences(_prefs);
-    
+
     if (mounted) {
       Navigator.push(
         context,
@@ -359,4 +420,3 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
     }
   }
 }
-
