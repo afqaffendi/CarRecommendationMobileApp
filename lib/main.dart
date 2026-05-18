@@ -150,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             Text(
-              'CarFinder',
+              'AutoPilih',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,

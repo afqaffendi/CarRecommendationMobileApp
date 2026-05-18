@@ -240,8 +240,9 @@ class GroqRecommendationService {
         print('GroqRec: $lastError\nGroq said: $rawText');
       }
 
-      // Final guard: ensure Groq didn't sneak in wrong fuel-type cars.
-      return _applyStrictFuelFilter(result, preferences.fuelType);
+      // Final guards: enforce fuel type and budget cap regardless of what Groq picked.
+      final fuelFiltered = _applyStrictFuelFilter(result, preferences.fuelType);
+      return _applyStrictBudgetFilter(fuelFiltered, preferences);
     } catch (e) {
       lastError = 'API error: $e';
       print('GroqRec: $lastError');
@@ -255,6 +256,19 @@ class GroqRecommendationService {
     return cars
         .where((c) => c.fuelCategory.toLowerCase() == fuelType.toLowerCase())
         .toList();
+  }
+
+  /// Hard budget filter — only applied when the user has set a budget constraint.
+  List<Car> _applyStrictBudgetFilter(List<Car> cars, UserPreferences prefs) {
+    if (!prefs.hasBudgetConstraint) return cars;
+    return cars.where((c) => c.price <= prefs.budget).toList();
+  }
+
+  String _safetyLabel(double weight) {
+    if (weight >= 0.8) return '5-star NCAP rated cars only';
+    if (weight >= 0.6) return 'prefer 4–5 star NCAP rated cars';
+    if (weight >= 0.3) return 'prefer 4+ star rated cars';
+    return 'any safety rating';
   }
 
   List<Car> _sortByRelevance(List<Car> cars, UserPreferences prefs) {
@@ -317,21 +331,27 @@ class GroqRecommendationService {
     List<Map<String, dynamic>> candidateData,
     String detectedBrand,
   ) {
-    final originalSection = prefs.originalInput.isNotEmpty
-        ? 'User\'s exact words: "${prefs.originalInput}"\n\n'
+    final contextSection = prefs.originalInput.isNotEmpty
+        ? 'Background context (for understanding intent only): "${prefs.originalInput}"\n\n'
         : '';
 
     final brandNote = detectedBrand.isNotEmpty
         ? '\nIMPORTANT: Only recommend ${detectedBrand.toUpperCase()} cars from the list below.\n'
         : '';
 
-    return """${originalSection}Select the best cars for this user from the list below.$brandNote
-User preferences:
-- Budget: ${prefs.hasBudgetConstraint ? 'Up to RM ${prefs.budget.toStringAsFixed(0)}' : 'No strict budget'}
+    final budgetLine = prefs.hasBudgetConstraint
+        ? 'HARD CAP RM ${prefs.budget.toStringAsFixed(0)} — do not recommend any car above this price'
+        : 'No strict budget limit';
+
+    return """${contextSection}FINAL USER PREFERENCES (these override anything in the background context above):
+- Budget: $budgetLine
 - Car Type: ${prefs.carType}
 - Usage: ${prefs.usageType}
-- Fuel Type: ${prefs.fuelType}
-- Priorities (0.0–1.0): Price=${prefs.priceWeight}, FuelEconomy=${prefs.fuelConsumptionWeight}, Safety=${prefs.safetyWeight}, Performance=${prefs.performance}, Comfort=${prefs.comfort}
+- Fuel Type: ${prefs.fuelType} — only recommend cars of this fuel type
+- Safety priority: ${_safetyLabel(prefs.safetyWeight)}
+- Fuel economy priority: ${prefs.fuelType == 'ev' ? 'N/A (electric)' : (prefs.fuelConsumptionWeight >= 0.7 ? 'high — prefer low L/100km' : prefs.fuelConsumptionWeight <= 0.3 ? 'low' : 'moderate')}
+
+Select the best cars for this user from the list below.$brandNote
 
 Available cars (use ONLY exact brand and model values from this list):
 ${jsonEncode(candidateData)}
