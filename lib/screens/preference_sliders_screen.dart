@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../models/user_preferences.dart';
 import '../services/database_service.dart';
 import '../theme/app_theme.dart';
@@ -31,7 +32,13 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
     _budgetMin = _computeBudgetMin();
     _prefs.budget = _prefs.budget.clamp(_budgetMin, _budgetMax);
     _prefs.budget = (_prefs.budget / _budgetStep).round() * _budgetStep;
+    // EVs have no fuel consumption — zero out the weight so TOPSIS ignores it.
+    if (_prefs.fuelType == 'ev') {
+      _prefs.fuelConsumptionWeight = 0.0;
+    }
   }
+
+  bool get _isEV => _prefs.fuelType == 'ev';
 
   // Derives the minimum budget from the cheapest car in the dataset.
   // Rounds UP to the nearest step so the minimum always returns at least one car.
@@ -83,116 +90,163 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AnimatedTitle(
-              text: 'What matters\nmost to you?',
-              charDelayMs: 36,
-              style: const TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            AnimatedFadeSlide(
-              delay: const Duration(milliseconds: 1100),
-              child: const Text(
-                'Adjust sliders to fine-tune your preferences',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: AppTheme.textSecondary,
-                  height: 1.5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // Budget Slider — actual RM range, minimum locked to cheapest car
-            _buildSliderSection(
-              icon: Icons.attach_money_rounded,
-              title: 'Budget',
-              subtitle: 'Maximum price you\'re willing to pay',
-              value: _prefs.budget,
-              min: _budgetMin,
-              max: _budgetMax,
-              divisions: ((_budgetMax - _budgetMin) / _budgetStep).round(),
-              displayLabel: _formatRM(_prefs.budget),
-              minLabel: _formatRM(_budgetMin),
-              maxLabel: _formatRM(_budgetMax),
-              onChanged: (v) => setState(() => _prefs.budget = v),
-            ),
-            const SizedBox(height: 24),
-
-            // Fuel Economy Slider — L/100km equivalent
-            _buildSliderSection(
-              icon: Icons.local_gas_station_rounded,
-              title: 'Fuel Economy',
-              subtitle: 'Target fuel consumption',
-              value: _prefs.fuelConsumptionWeight,
-              min: 0,
-              max: 1,
-              divisions: 10,
-              displayLabel: _fuelEconomyLabel(_prefs.fuelConsumptionWeight),
-              minLabel: 'Not Important',
-              maxLabel: '≤ 6 L/100km',
-              onChanged: (v) => setState(() => _prefs.fuelConsumptionWeight = v),
-            ),
-            const SizedBox(height: 24),
-
-            // Safety Slider — star rating priority
-            _buildSliderSection(
-              icon: Icons.health_and_safety_rounded,
-              title: 'Safety',
-              subtitle: 'NCAP star rating priority',
-              value: _prefs.safetyWeight,
-              min: 0,
-              max: 1,
-              divisions: 10,
-              displayLabel: _safetyLabel(_prefs.safetyWeight),
-              minLabel: 'Not Important',
-              maxLabel: '5 Stars Only',
-              onChanged: (v) => setState(() => _prefs.safetyWeight = v),
-            ),
-            const SizedBox(height: 32),
-
-            // Priority Distribution (Fuel vs Safety)
-            _buildWeightSummary(),
-            const SizedBox(height: 40),
-
-            // Get Recommendations Button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: FilledButton(
-                onPressed: _onGetRecommendations,
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppTheme.accent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.auto_awesome_rounded),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Get Recommendations',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+      body: Stack(
+        children: [
+          // Background orbs
+          Positioned(
+            bottom: -80,
+            right: -60,
+            child: Container(
+              width: 280,
+              height: 280,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.accent.withValues(alpha: 0.18),
+                    Colors.transparent,
                   ],
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+          Positioned(
+            top: 80,
+            left: -70,
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppTheme.accentBlue.withValues(alpha: 0.15),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AnimatedTitle(
+                  text: 'What matters\nmost to you?',
+                  charDelayMs: 36,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                AnimatedFadeSlide(
+                  delay: const Duration(milliseconds: 1100),
+                  child: const Text(
+                    'Adjust sliders to fine-tune your preferences',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppTheme.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                _buildSliderSection(
+                  icon: Icons.attach_money_rounded,
+                  title: 'Budget',
+                  subtitle: 'Maximum price you\'re willing to pay',
+                  value: _prefs.budget,
+                  min: _budgetMin,
+                  max: _budgetMax,
+                  divisions: ((_budgetMax - _budgetMin) / _budgetStep).round(),
+                  displayLabel: _formatRM(_prefs.budget),
+                  minLabel: _formatRM(_budgetMin),
+                  maxLabel: _formatRM(_budgetMax),
+                  onChanged: (v) => setState(() {
+                    _prefs.budget = v;
+                    // Touching the slider always means the user wants a hard budget cap.
+                    _prefs.hasBudgetConstraint = true;
+                  }),
+                ).animate().fadeIn(delay: 200.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, delay: 200.ms, duration: 400.ms, curve: Curves.easeOutCubic),
+                const SizedBox(height: 24),
+
+                if (_isEV)
+                  _buildEvFuelNote()
+                      .animate()
+                      .fadeIn(delay: 320.ms, duration: 400.ms)
+                      .slideY(begin: 0.1, end: 0, delay: 320.ms, duration: 400.ms, curve: Curves.easeOutCubic)
+                else
+                  _buildSliderSection(
+                    icon: Icons.local_gas_station_rounded,
+                    title: 'Fuel Economy',
+                    subtitle: 'Target fuel consumption',
+                    value: _prefs.fuelConsumptionWeight,
+                    min: 0,
+                    max: 1,
+                    divisions: 10,
+                    displayLabel: _fuelEconomyLabel(_prefs.fuelConsumptionWeight),
+                    minLabel: 'Not Important',
+                    maxLabel: '≤ 6 L/100km',
+                    onChanged: (v) => setState(() => _prefs.fuelConsumptionWeight = v),
+                  ).animate().fadeIn(delay: 320.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, delay: 320.ms, duration: 400.ms, curve: Curves.easeOutCubic),
+                const SizedBox(height: 24),
+
+                _buildSliderSection(
+                  icon: Icons.health_and_safety_rounded,
+                  title: 'Safety',
+                  subtitle: 'NCAP star rating priority',
+                  value: _prefs.safetyWeight,
+                  min: 0,
+                  max: 1,
+                  divisions: 10,
+                  displayLabel: _safetyLabel(_prefs.safetyWeight),
+                  minLabel: 'Not Important',
+                  maxLabel: '5 Stars Only',
+                  onChanged: (v) => setState(() => _prefs.safetyWeight = v),
+                ).animate().fadeIn(delay: 440.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, delay: 440.ms, duration: 400.ms, curve: Curves.easeOutCubic),
+                const SizedBox(height: 32),
+
+                _buildWeightSummary()
+                    .animate()
+                    .fadeIn(delay: 560.ms, duration: 400.ms)
+                    .slideY(begin: 0.1, end: 0, delay: 560.ms, duration: 400.ms, curve: Curves.easeOutCubic),
+                const SizedBox(height: 40),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: FilledButton(
+                    onPressed: _onGetRecommendations,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.accent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.auto_awesome_rounded),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Get Recommendations',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ).animate().fadeIn(delay: 680.ms, duration: 400.ms).slideY(begin: 0.1, end: 0, delay: 680.ms, duration: 400.ms, curve: Curves.easeOutCubic),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -308,7 +362,125 @@ class _PreferenceSlidersScreenState extends State<PreferenceSlidersScreen> {
     );
   }
 
+  Widget _buildEvFuelNote() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8F5E9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFF4CAF82).withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFF4CAF82).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.bolt_rounded, color: Color(0xFF2E7D32), size: 20),
+          ),
+          const SizedBox(width: 16),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Fuel Economy — Not Applicable',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1B5E20),
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'EVs run on electricity, so fuel consumption is not used in ranking. Only price and safety matter.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF2E7D32),
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWeightSummary() {
+    if (_isEV) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppTheme.warmSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.cardBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Priority Distribution',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'EV mode — ranking based on price and safety only',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: SizedBox(
+                height: 32,
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 50,
+                      child: Container(
+                        color: AppTheme.accent,
+                        alignment: Alignment.center,
+                        child: const Text('Price 50%',
+                            style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 50,
+                      child: Container(
+                        color: const Color(0xFF4CAF82),
+                        alignment: Alignment.center,
+                        child: const Text('Safety 50%',
+                            style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildLegendItem(AppTheme.accent, 'Price'),
+                _buildLegendItem(const Color(0xFF4CAF82), 'Safety'),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
     final total = _prefs.fuelConsumptionWeight + _prefs.safetyWeight;
     final fuelPercent = total > 0 ? (_prefs.fuelConsumptionWeight / total * 100).toInt() : 50;
     final safetyPercent = total > 0 ? (_prefs.safetyWeight / total * 100).toInt() : 50;

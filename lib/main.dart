@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -21,7 +22,6 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Cache all Firestore reads to disk — works offline after first load.
   FirebaseFirestore.instance.settings = const Settings(
     persistenceEnabled: true,
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
@@ -81,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
     _fadeCtrl = AnimationController(
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
@@ -100,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen>
       backgroundColor: AppTheme.warmBackground,
       body: Stack(
         children: [
-          const _Background(),
+          const _WarmBackground(),
           SafeArea(
             child: FadeTransition(
               opacity: _fade,
@@ -109,12 +109,12 @@ class _HomeScreenState extends State<HomeScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Spacer(flex: 1),
+                    const SizedBox(height: 20),
                     _buildBrand(),
-                    const SizedBox(height: 52),
+                    const Spacer(flex: 1),
                     _buildHero(),
-                    const SizedBox(height: 36),
-                    _buildFeatureGlassCard(),
+                    const SizedBox(height: 32),
+                    _buildFeatureCard(),
                     const Spacer(flex: 2),
                     _buildActions(),
                     const SizedBox(height: 40),
@@ -131,28 +131,28 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildBrand() {
     return Row(
       children: [
+        // Logo mark
         Container(
-          width: 44,
-          height: 44,
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
-            color: AppTheme.accentLight,
+            color: AppTheme.textPrimary,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.cardBorder),
           ),
           child: const Icon(
             Icons.directions_car_rounded,
-            size: 22,
-            color: AppTheme.accent,
+            size: 20,
+            color: Colors.white,
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
             Text(
               'CarFinder',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textPrimary,
                 letterSpacing: -0.3,
@@ -161,9 +161,9 @@ class _HomeScreenState extends State<HomeScreen>
             Text(
               'MALAYSIA',
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 9,
                 color: AppTheme.textSecondary,
-                letterSpacing: 1.6,
+                letterSpacing: 2.0,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -171,10 +171,10 @@ class _HomeScreenState extends State<HomeScreen>
         ),
         const Spacer(),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
-            color: AppTheme.accentLight,
-            borderRadius: BorderRadius.circular(20),
+            color: AppTheme.accent.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(100),
           ),
           child: const Text(
             'AI Powered',
@@ -193,27 +193,29 @@ class _HomeScreenState extends State<HomeScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Editorial-style title: thin weight large display text
         AnimatedTitle(
           text: 'Find your\nperfect car.',
-          delay: const Duration(milliseconds: 250),
-          charDelayMs: 40,
+          delay: const Duration(milliseconds: 300),
+          charDelayMs: 38,
           style: const TextStyle(
-            fontSize: 44,
-            fontWeight: FontWeight.w800,
+            fontSize: 46,
+            fontWeight: FontWeight.w300,
             color: AppTheme.textPrimary,
-            height: 1.05,
-            letterSpacing: -1.5,
+            height: 1.08,
+            letterSpacing: -2.0,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 18),
         AnimatedFadeSlide(
-          delay: const Duration(milliseconds: 1300),
+          delay: const Duration(milliseconds: 1400),
           child: const Text(
             'AI-powered recommendations\ntailored for Malaysian buyers.',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: 15,
               color: AppTheme.textSecondary,
-              height: 1.6,
+              height: 1.65,
+              fontWeight: FontWeight.w400,
             ),
           ),
         ),
@@ -221,27 +223,30 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildFeatureGlassCard() {
+  Widget _buildFeatureCard() {
     return GlassCard(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
       child: Column(
         children: [
-          const _FeatureRow(
+          _FeatureRow(
             icon: Icons.psychology_rounded,
             label: 'Natural Language',
             description: 'Describe your needs in plain text',
+            animDelay: 1600.ms,
           ),
-          const Divider(height: 24, color: AppTheme.divider),
-          const _FeatureRow(
+          Divider(height: 24, color: AppTheme.divider),
+          _FeatureRow(
             icon: Icons.tune_rounded,
             label: 'Smart Filtering',
             description: 'Auto-adjust preferences with AI',
+            animDelay: 1750.ms,
           ),
-          const Divider(height: 24, color: AppTheme.divider),
-          const _FeatureRow(
+          Divider(height: 24, color: AppTheme.divider),
+          _FeatureRow(
             icon: Icons.leaderboard_rounded,
             label: 'TOPSIS Ranking',
             description: 'Multi-criteria decision analysis',
+            animDelay: 1900.ms,
           ),
         ],
       ),
@@ -251,11 +256,12 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildActions() {
     return Column(
       children: [
+        // Primary dark pill CTA
         SizedBox(
           width: double.infinity,
           child: PressableButton(
             glass: true,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(100),
             padding: const EdgeInsets.symmetric(vertical: 18),
             onPressed: () => Navigator.push(
               context,
@@ -264,18 +270,29 @@ class _HomeScreenState extends State<HomeScreen>
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
+                const Text(
                   'Find My Car',
                   style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                     letterSpacing: -0.2,
                   ),
                 ),
                 const SizedBox(width: 10),
-                Icon(Icons.arrow_forward_rounded,
-                    size: 20, color: AppTheme.accent),
+                Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                ),
               ],
             ),
           ),
@@ -284,7 +301,7 @@ class _HomeScreenState extends State<HomeScreen>
         Row(
           children: [
             Expanded(
-              child: _GlassSecondaryButton(
+              child: _OutlineSecondaryButton(
                 icon: Icons.favorite_rounded,
                 label: 'Favorites',
                 onTap: () => Navigator.push(
@@ -295,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: _GlassSecondaryButton(
+              child: _OutlineSecondaryButton(
                 icon: Icons.photo_library_rounded,
                 label: 'Car Gallery',
                 onTap: () => Navigator.push(
@@ -311,69 +328,103 @@ class _HomeScreenState extends State<HomeScreen>
   }
 }
 
-class _Background extends StatelessWidget {
-  const _Background();
+// Warm animated background — large orange blob like the reference image
+class _WarmBackground extends StatefulWidget {
+  const _WarmBackground();
+
+  @override
+  State<_WarmBackground> createState() => _WarmBackgroundState();
+}
+
+class _WarmBackgroundState extends State<_WarmBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      duration: const Duration(seconds: 5),
+      vsync: this,
+    )..repeat(reverse: true);
+    _pulse = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Stack(
-        children: [
-          // Coral glow — bottom right
-          Positioned(
-            bottom: -100,
-            right: -80,
-            child: Container(
-              width: 340,
-              height: 340,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppTheme.accent.withValues(alpha: 0.28),
-                    Colors.transparent,
-                  ],
+    return AnimatedBuilder(
+      animation: _pulse,
+      builder: (_, __) => Positioned.fill(
+        child: Stack(
+          children: [
+            // Large warm orange blob — the hero visual (like the reference image)
+            Positioned(
+              bottom: -60,
+              right: -80,
+              child: Container(
+                width: 380,
+                height: 380,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.accent
+                          .withValues(alpha: 0.30 + _pulse.value * 0.12),
+                      AppTheme.accent.withValues(alpha: 0.10 + _pulse.value * 0.05),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.5, 1.0],
+                  ),
                 ),
               ),
             ),
-          ),
-          // Purple orb — mid left
-          Positioned(
-            top: 180,
-            left: -80,
-            child: Container(
-              width: 270,
-              height: 270,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppTheme.accentBlue.withValues(alpha: 0.22),
-                    Colors.transparent,
-                  ],
+            // Smaller warm amber blob — top left (secondary)
+            Positioned(
+              top: 60,
+              left: -90,
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.accentBlue
+                          .withValues(alpha: 0.18 + (1 - _pulse.value) * 0.08),
+                      Colors.transparent,
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          // Subtle coral top-right
-          Positioned(
-            top: -70,
-            right: 30,
-            child: Container(
-              width: 230,
-              height: 230,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppTheme.accent.withValues(alpha: 0.12),
-                    Colors.transparent,
-                  ],
+            // Very subtle top-right warmth
+            Positioned(
+              top: -40,
+              right: 40,
+              child: Container(
+                width: 200,
+                height: 200,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.accent
+                          .withValues(alpha: 0.08 + _pulse.value * 0.04),
+                      Colors.transparent,
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -383,11 +434,13 @@ class _FeatureRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String description;
+  final Duration animDelay;
 
   const _FeatureRow({
     required this.icon,
     required this.label,
     required this.description,
+    required this.animDelay,
   });
 
   @override
@@ -400,10 +453,7 @@ class _FeatureRow extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppTheme.accentLight,
             borderRadius: BorderRadius.circular(11),
-            border: Border.all(
-              color: AppTheme.cardBorder,
-              width: 1,
-            ),
+            border: Border.all(color: AppTheme.cardBorder),
           ),
           child: Icon(icon, size: 19, color: AppTheme.accent),
         ),
@@ -435,26 +485,37 @@ class _FeatureRow extends StatelessWidget {
         const Icon(Icons.chevron_right_rounded,
             size: 16, color: AppTheme.textSecondary),
       ],
-    );
+    )
+        .animate()
+        .fadeIn(delay: animDelay, duration: 400.ms)
+        .slideX(
+          begin: 0.06,
+          end: 0,
+          delay: animDelay,
+          duration: 400.ms,
+          curve: Curves.easeOutCubic,
+        );
   }
 }
 
-class _GlassSecondaryButton extends StatefulWidget {
+// Outline secondary button (white with border)
+class _OutlineSecondaryButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
 
-  const _GlassSecondaryButton({
+  const _OutlineSecondaryButton({
     required this.icon,
     required this.label,
     required this.onTap,
   });
 
   @override
-  State<_GlassSecondaryButton> createState() => _GlassSecondaryButtonState();
+  State<_OutlineSecondaryButton> createState() =>
+      _OutlineSecondaryButtonState();
 }
 
-class _GlassSecondaryButtonState extends State<_GlassSecondaryButton>
+class _OutlineSecondaryButtonState extends State<_OutlineSecondaryButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _scale;
@@ -489,9 +550,20 @@ class _GlassSecondaryButtonState extends State<_GlassSecondaryButton>
       onTapCancel: () => _ctrl.reverse(),
       child: ScaleTransition(
         scale: _scale,
-        child: GlassCard(
+        child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
-          borderRadius: BorderRadius.circular(16),
+          decoration: BoxDecoration(
+            color: AppTheme.warmSurface,
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(color: AppTheme.cardBorder),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8B7355).withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -502,7 +574,7 @@ class _GlassSecondaryButtonState extends State<_GlassSecondaryButton>
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.textPrimary,
                 ),
               ),
             ],

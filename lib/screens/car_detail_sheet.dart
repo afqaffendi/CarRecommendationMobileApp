@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/car.dart';
 import '../models/user_preferences.dart';
@@ -65,9 +66,9 @@ class _CarDetailSheetState extends State<CarDetailSheet> {
     final car = widget.car;
     return Container(
       height: MediaQuery.of(context).size.height * 0.88,
-      decoration: const BoxDecoration(
-        color: Color(0xFF111111),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      decoration: BoxDecoration(
+        color: AppTheme.warmBackground,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
         children: [
@@ -77,7 +78,7 @@ class _CarDetailSheetState extends State<CarDetailSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: AppTheme.textPrimary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -93,13 +94,25 @@ class _CarDetailSheetState extends State<CarDetailSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildNameSection(car),
+                        _buildNameSection(car)
+                            .animate()
+                            .fadeIn(delay: 100.ms, duration: 350.ms)
+                            .slideY(begin: 0.06, end: 0, delay: 100.ms, duration: 350.ms, curve: Curves.easeOutCubic),
                         const SizedBox(height: 20),
-                        _buildPaymentSection(),
+                        _buildPaymentSection()
+                            .animate()
+                            .fadeIn(delay: 200.ms, duration: 350.ms)
+                            .slideY(begin: 0.06, end: 0, delay: 200.ms, duration: 350.ms, curve: Curves.easeOutCubic),
                         const SizedBox(height: 20),
-                        _buildSpecsSection(car),
+                        _buildSpecsSection(car)
+                            .animate()
+                            .fadeIn(delay: 300.ms, duration: 350.ms)
+                            .slideY(begin: 0.06, end: 0, delay: 300.ms, duration: 350.ms, curve: Curves.easeOutCubic),
                         const SizedBox(height: 20),
-                        _buildAISection(),
+                        _buildAISection()
+                            .animate()
+                            .fadeIn(delay: 400.ms, duration: 350.ms)
+                            .slideY(begin: 0.06, end: 0, delay: 400.ms, duration: 350.ms, curve: Curves.easeOutCubic),
                       ],
                     ),
                   ),
@@ -153,7 +166,7 @@ class _CarDetailSheetState extends State<CarDetailSheet> {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.5),
+                  color: Colors.black.withValues(alpha: 0.35),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
@@ -247,13 +260,22 @@ class _CarDetailSheetState extends State<CarDetailSheet> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF221028), Color(0xFF130A18)],
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.accent.withValues(alpha: 0.92),
+            AppTheme.accentBlue.withValues(alpha: 0.85),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.cardBorder),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.accent.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,8 +339,8 @@ class _CarDetailSheetState extends State<CarDetailSheet> {
                             horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
                           color: _loanYears == y
-                              ? AppTheme.accent
-                              : Colors.white.withValues(alpha: 0.08),
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -327,8 +349,8 @@ class _CarDetailSheetState extends State<CarDetailSheet> {
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: _loanYears == y
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.45),
+                                ? AppTheme.accent
+                                : Colors.white.withValues(alpha: 0.75),
                           ),
                         ),
                       ),
@@ -477,7 +499,10 @@ class _CarDetailSheetState extends State<CarDetailSheet> {
                     color: AppTheme.textSecondary.withValues(alpha: 0.6),
                     height: 1.5,
                   ),
-                )
+                ).animate(onPlay: (c) => c.repeat()).shimmer(
+                    duration: 1800.ms,
+                    color: AppTheme.accent.withValues(alpha: 0.12),
+                  )
               : Text(
                   _explanation,
                   style: const TextStyle(

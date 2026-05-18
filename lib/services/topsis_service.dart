@@ -161,6 +161,10 @@ class TopsisService {
       if (row[2] > maxSafety) maxSafety = row[2];
     }
 
+    // If no car had fuel > 0 (all-zero / EV data), treat 0 as the ideal best
+    // so the fuel column doesn't inflate distances to infinity.
+    if (minFuel == double.infinity) minFuel = 0.0;
+
     return [minPrice, minFuel, maxSafety];
   }
 

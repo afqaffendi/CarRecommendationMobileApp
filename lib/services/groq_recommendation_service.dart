@@ -131,6 +131,8 @@ class GroqRecommendationService {
     if (detectedBrand.isNotEmpty) {
       // Brand-specific search — bypass CBF relevance sort that would bury brand cars
       candidates = allCars.where((c) => _brandMatches(c, detectedBrand)).toList();
+      // Apply fuel type hard filter even in brand path
+      candidates = _applyStrictFuelFilter(candidates, preferences.fuelType);
       if (preferences.hasBudgetConstraint) {
         final budgetFiltered = candidates.where((c) => c.price <= preferences.budget).toList();
         if (budgetFiltered.isNotEmpty) candidates = budgetFiltered;
@@ -143,9 +145,11 @@ class GroqRecommendationService {
       // Standard CBF pre-filter — keeps prompt small and focused.
       candidates = CBFService.filterCars(allCars, preferences);
       if (candidates.isEmpty) {
+        // Fallback: relax budget slightly but KEEP fuel type strict
+        final fuelFiltered = _applyStrictFuelFilter(allCars, preferences.fuelType);
         candidates = preferences.hasBudgetConstraint
-            ? allCars.where((c) => c.price <= preferences.budget * 1.2).toList()
-            : allCars;
+            ? fuelFiltered.where((c) => c.price <= preferences.budget * 1.2).toList()
+            : fuelFiltered;
       }
       candidates = _sortByRelevance(candidates, preferences);
       if (candidates.length > _maxCandidates) {
@@ -236,12 +240,21 @@ class GroqRecommendationService {
         print('GroqRec: $lastError\nGroq said: $rawText');
       }
 
-      return result;
+      // Final guard: ensure Groq didn't sneak in wrong fuel-type cars.
+      return _applyStrictFuelFilter(result, preferences.fuelType);
     } catch (e) {
       lastError = 'API error: $e';
       print('GroqRec: $lastError');
       return [];
     }
+  }
+
+  /// Hard fuel-type filter — 'any' passes everything, otherwise requires exact match.
+  List<Car> _applyStrictFuelFilter(List<Car> cars, String fuelType) {
+    if (fuelType == 'any') return cars;
+    return cars
+        .where((c) => c.fuelCategory.toLowerCase() == fuelType.toLowerCase())
+        .toList();
   }
 
   List<Car> _sortByRelevance(List<Car> cars, UserPreferences prefs) {

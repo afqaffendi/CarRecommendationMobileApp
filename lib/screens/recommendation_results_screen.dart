@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shimmer/shimmer.dart';
 import '../models/car.dart';
 import '../models/user_preferences.dart';
 import '../services/database_service.dart';
@@ -341,35 +343,147 @@ class _RecommendationResultsScreenState
   }
 
   Widget _buildLoadingState() {
-    return Center(
+    return SingleChildScrollView(
+      physics: const NeverScrollableScrollPhysics(),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: AppTheme.accentLight,
-              shape: BoxShape.circle,
-            ),
-            child: const Padding(
-              padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(
-                color: AppTheme.accent,
-                strokeWidth: 2.5,
+          // Shimmer summary header
+          Shimmer.fromColors(
+            baseColor: const Color(0xFFEDE8E3),
+            highlightColor: const Color(0xFFF8F5F2),
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+              height: 90,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
               ),
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
-            'AI is finding your best matches...',
-            style: TextStyle(
-              fontSize: 15,
-              color: AppTheme.textSecondary,
-              fontWeight: FontWeight.w500,
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+            child: Shimmer.fromColors(
+              baseColor: const Color(0xFFEDE8E3),
+              highlightColor: const Color(0xFFF8F5F2),
+              child: Container(
+                width: 140,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          // Shimmer car cards
+          ...List.generate(3, (i) => _buildSkeletonCard()),
+          const SizedBox(height: 16),
+          // AI loading indicator at bottom
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      color: AppTheme.accent,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'AI is finding your best matches...',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    return Shimmer.fromColors(
+      baseColor: const Color(0xFFEDE8E3),
+      highlightColor: const Color(0xFFF8F5F2),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 0, 24, 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: 180,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(21)),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 18,
+                      width: 180,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      height: 14,
+                      width: 100,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        _skeletonChip(80),
+                        const SizedBox(width: 6),
+                        _skeletonChip(70),
+                        const SizedBox(width: 6),
+                        _skeletonChip(60),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _skeletonChip(double width) {
+    return Container(
+      height: 28,
+      width: width,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
       ),
     );
   }
@@ -440,7 +554,7 @@ class _RecommendationResultsScreenState
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -495,7 +609,7 @@ class _RecommendationResultsScreenState
         ),
         SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) => _buildCarCard(_rankedCars[index]),
+            (context, index) => _buildCarCard(_rankedCars[index], index),
             childCount: _rankedCars.length,
           ),
         ),
@@ -509,18 +623,20 @@ class _RecommendationResultsScreenState
       margin: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF221028), Color(0xFF130A18)],
+          colors: [
+            AppTheme.accent.withValues(alpha: 0.90),
+            AppTheme.accentBlue.withValues(alpha: 0.85),
+          ],
         ),
-        border: Border.all(color: AppTheme.cardBorder, width: 1.0),
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.accent.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
+            color: AppTheme.accent.withValues(alpha: 0.22),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -566,7 +682,7 @@ class _RecommendationResultsScreenState
       {required IconData icon, required String value, required String label}) {
     return Column(
       children: [
-        Icon(icon, color: Colors.white.withValues(alpha: 0.7), size: 20),
+        Icon(icon, color: Colors.white.withValues(alpha: 0.85), size: 20),
         const SizedBox(height: 6),
         Text(
           value,
@@ -580,7 +696,7 @@ class _RecommendationResultsScreenState
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: Colors.white.withValues(alpha: 0.70),
             fontSize: 11,
           ),
         ),
@@ -588,7 +704,7 @@ class _RecommendationResultsScreenState
     );
   }
 
-  Widget _buildCarCard(RankedCar rankedCar) {
+  Widget _buildCarCard(RankedCar rankedCar, int index) {
     final car = rankedCar.car;
     final isTop = rankedCar.rank == 1;
     final isFavorited = _isFavorite(car);
@@ -601,9 +717,7 @@ class _RecommendationResultsScreenState
         blur: false,
         padding: EdgeInsets.zero,
         borderRadius: BorderRadius.circular(22),
-        backgroundColor: isTop
-            ? AppTheme.warmSurface.withValues(alpha: 1.0)
-            : const Color(0xFF111111),
+        backgroundColor: AppTheme.warmSurface,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -650,6 +764,15 @@ class _RecommendationResultsScreenState
                             ? AppTheme.accent
                             : Colors.black.withValues(alpha: 0.55),
                         borderRadius: BorderRadius.circular(20),
+                        boxShadow: isTop
+                            ? [
+                                BoxShadow(
+                                  color: AppTheme.accent.withValues(alpha: 0.55),
+                                  blurRadius: 14,
+                                  spreadRadius: 0,
+                                ),
+                              ]
+                            : null,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -668,6 +791,11 @@ class _RecommendationResultsScreenState
                           ),
                         ],
                       ),
+                    ).animate(
+                      onPlay: isTop ? (c) => c.repeat(reverse: true) : null,
+                    ).shimmer(
+                      duration: 2500.ms,
+                      color: isTop ? Colors.white.withValues(alpha: 0.25) : Colors.transparent,
                     ),
                   ),
                   // Score badge — top right
@@ -775,7 +903,15 @@ class _RecommendationResultsScreenState
         ),
       ),
     ),
-    );
+    )
+        .animate(delay: (index * 90).ms)
+        .fadeIn(duration: 400.ms)
+        .slideY(
+          begin: 0.12,
+          end: 0,
+          duration: 400.ms,
+          curve: Curves.easeOutCubic,
+        );
   }
 
   Widget _specChip(IconData icon, String text) {

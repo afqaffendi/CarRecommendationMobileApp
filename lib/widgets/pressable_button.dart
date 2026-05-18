@@ -1,6 +1,6 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../theme/app_theme.dart';
 
 class PressableButton extends StatefulWidget {
   final Widget child;
@@ -15,8 +15,8 @@ class PressableButton extends StatefulWidget {
     super.key,
     required this.child,
     this.onPressed,
-    this.color = const Color(0xFF1C1A2E),
-    this.borderRadius = const BorderRadius.all(Radius.circular(16)),
+    this.color = AppTheme.accent,
+    this.borderRadius = const BorderRadius.all(Radius.circular(100)),
     this.padding = const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
     this.scaleTo = 0.96,
     this.glass = false,
@@ -66,11 +66,11 @@ class _PressableButtonState extends State<PressableButton>
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: _onTapDown,
-      onTapUp: _onTapUp,
+      onTapUp: widget.onPressed != null ? _onTapUp : null,
       onTapCancel: _onTapCancel,
       child: ScaleTransition(
         scale: _scale,
-        child: widget.glass ? _glassBody() : _solidBody(),
+        child: widget.glass ? _darkPillBody() : _solidBody(),
       ),
     );
   }
@@ -86,35 +86,26 @@ class _PressableButtonState extends State<PressableButton>
     );
   }
 
-  Widget _glassBody() {
-    return ClipRRect(
-      borderRadius: widget.borderRadius,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-        child: Container(
-          padding: widget.padding,
-          decoration: BoxDecoration(
-            borderRadius: widget.borderRadius,
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white.withValues(alpha: 0.12),
-                Colors.white.withValues(alpha: 0.05),
-              ],
-            ),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 20,
-                offset: const Offset(0, 6),
-              ),
-            ],
+  /// Primary dark pill button — matches the editorial dark button style
+  /// from the warm minimal design reference.
+  Widget _darkPillBody() {
+    return Container(
+      padding: widget.padding,
+      decoration: BoxDecoration(
+        color: AppTheme.textPrimary,
+        borderRadius: widget.borderRadius,
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.textPrimary.withValues(alpha: 0.18),
+            blurRadius: 20,
+            offset: const Offset(0, 6),
           ),
+        ],
+      ),
+      child: DefaultTextStyle.merge(
+        style: const TextStyle(color: Colors.white),
+        child: IconTheme(
+          data: const IconThemeData(color: Colors.white),
           child: widget.child,
         ),
       ),

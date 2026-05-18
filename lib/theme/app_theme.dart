@@ -1,34 +1,36 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Dark palette — rose/pink accent
-  static const Color warmBackground = Color(0xFF080808);
-  static const Color warmSurface    = Color(0xFF161616);
-  static const Color accent         = Color(0xFFE8428A);  // vivid rose-pink
-  static const Color accentBlue     = Color(0xFF7B6FC0);  // purple (complementary)
-  static const Color accentLight    = Color(0xFF1E0A15);  // dark rose tint for containers
-  static const Color textPrimary    = Color(0xFFFFFFFF);
-  static const Color textSecondary  = Color.fromARGB(255, 223, 223, 223);
-  static const Color glassColor     = Color(0x12FFFFFF);  // dark glass
-  static const Color glassBorder    = Color(0x14FFFFFF);  // subtle white border
-  static const Color cardBorder     = Color(0x14FFFFFF);
-  static const Color divider        = Color(0x14FFFFFF);
+  // Warm minimal light palette
+  static const Color warmBackground = Color(0xFFF3EDE7); // warm cream
+  static const Color warmSurface    = Color(0xFFFFFFFF); // pure white
+  static const Color accent         = Color(0xFFE8651A); // warm orange
+  static const Color accentBlue     = Color(0xFFC47A4A); // warm amber (secondary)
+  static const Color accentLight    = Color(0xFFFFF0E8); // light orange tint
+  static const Color textPrimary    = Color(0xFF1C1C1E); // near black
+  static const Color textSecondary  = Color(0xFF9E9A96); // warm medium gray
+  static const Color glassColor     = Color(0xFFFFFFFF); // white surface
+  static const Color glassBorder    = Color(0xFFEDE8E3); // subtle warm border
+  static const Color cardBorder     = Color(0xFFEDE8E3); // card border
+  static const Color divider        = Color(0xFFEDE8E3); // divider
 
-  // Gradient card colors
-  static const List<Color> gradientRose   = [Color(0xFFE8428A), Color(0xFFA01555)];
-  static const List<Color> gradientPurple = [Color(0xFF7B6FC0), Color(0xFF3D3080)];
-  static const List<Color> gradientPink   = [Color(0xFFD4607A), Color(0xFF8A3048)];
+  // Gradients
+  static const List<Color> gradientOrange = [Color(0xFFE8651A), Color(0xFFFF9A5C)];
   static const List<Color> gradientWarm   = [Color(0xFFD4A883), Color(0xFF8B6045)];
-  static const List<Color> gradientDark   = [Color(0xFF2A2A2A), Color(0xFF141414)];
+  static const List<Color> gradientLight  = [Color(0xFFFFF3EC), Color(0xFFF3EDE7)];
+  static const List<Color> gradientDark   = [Color(0xFF1C1C1E), Color(0xFF2C2C2E)];
+  // Legacy aliases kept for backward compatibility
+  static const List<Color> gradientRose   = gradientOrange;
+  static const List<Color> gradientPurple = gradientWarm;
+  static const List<Color> gradientPink   = gradientOrange;
 
   static ThemeData get theme => ThemeData(
-        colorScheme: const ColorScheme.dark(
-          brightness: Brightness.dark,
+        colorScheme: const ColorScheme.light(
+          brightness: Brightness.light,
           primary: textPrimary,
           onPrimary: warmBackground,
           secondary: accent,
-          onSecondary: textPrimary,
-          tertiary: accentBlue,
+          onSecondary: Colors.white,
           surface: warmSurface,
           onSurface: textPrimary,
         ),
@@ -49,21 +51,21 @@ class AppTheme {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: accent,
-            foregroundColor: textPrimary,
+            backgroundColor: textPrimary,
+            foregroundColor: Colors.white,
             textStyle: const TextStyle(fontWeight: FontWeight.w600),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(100),
             ),
           ),
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
             backgroundColor: accent,
-            foregroundColor: textPrimary,
+            foregroundColor: Colors.white,
             textStyle: const TextStyle(fontWeight: FontWeight.w600),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(100),
             ),
           ),
         ),
@@ -72,18 +74,26 @@ class AppTheme {
             foregroundColor: textSecondary,
           ),
         ),
-        cardTheme: const CardThemeData(
+        cardTheme: CardThemeData(
           color: warmSurface,
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(24)),
+            borderRadius: BorderRadius.circular(24),
           ),
         ),
+        sliderTheme: SliderThemeData(
+          activeTrackColor: accent,
+          inactiveTrackColor: cardBorder,
+          thumbColor: accent,
+          overlayColor: accent.withValues(alpha: 0.12),
+          trackHeight: 6,
+          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+        ),
         snackBarTheme: SnackBarThemeData(
-          backgroundColor: warmSurface,
-          contentTextStyle: const TextStyle(color: textPrimary),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          backgroundColor: textPrimary,
+          contentTextStyle: const TextStyle(color: Colors.white),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           behavior: SnackBarBehavior.floating,
         ),
         dividerColor: divider,
