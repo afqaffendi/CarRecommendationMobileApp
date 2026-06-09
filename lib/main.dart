@@ -12,7 +12,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'theme/app_theme.dart';
 import 'widgets/animated_title.dart';
-import 'widgets/glass_card.dart';
 import 'widgets/pressable_button.dart';
 
 void main() async {
@@ -72,28 +71,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _fadeCtrl;
-  late final Animation<double> _fade;
-
-  @override
-  void initState() {
-    super.initState();
-    _fadeCtrl = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-    _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
-    _fadeCtrl.forward();
-  }
-
-  @override
-  void dispose() {
-    _fadeCtrl.dispose();
-    super.dispose();
-  }
-
+class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,25 +80,30 @@ class _HomeScreenState extends State<HomeScreen>
         children: [
           const _WarmBackground(),
           SafeArea(
-            child: FadeTransition(
-              opacity: _fade,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    _buildBrand(),
-                    const Spacer(flex: 1),
-                    _buildHero(),
-                    const SizedBox(height: 32),
-                    _buildFeatureCard(),
-                    const Spacer(flex: 2),
-                    _buildActions(),
-                    const SizedBox(height: 40),
-                  ],
-                ),
-              ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  _buildBrand(),
+                  const Spacer(flex: 1),
+                  _buildHero(),
+                  const SizedBox(height: 32),
+                  _buildFeatureBubbles(),
+                  const Spacer(flex: 2),
+                  _buildActions(),
+                  const SizedBox(height: 40),
+                ],
+              )
+                  .animate()
+                  .fadeIn(duration: 700.ms, curve: Curves.easeOut)
+                  .blur(
+                    begin: const Offset(20, 20),
+                    end: Offset.zero,
+                    duration: 700.ms,
+                    curve: Curves.easeOut,
+                  ),
             ),
           ),
         ],
@@ -223,33 +206,39 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _buildFeatureCard() {
-    return GlassCard(
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-      child: Column(
-        children: [
-          _FeatureRow(
+  Widget _buildFeatureBubbles() {
+    return Row(
+      children: [
+        Expanded(
+          child: _BubbleCard(
             icon: Icons.psychology_rounded,
-            label: 'Natural Language',
-            description: 'Describe your needs in plain text',
+            label: 'Natural\nLanguage',
+            description: 'Describe in plain text',
+            color: AppTheme.accent,
             animDelay: 1600.ms,
           ),
-          Divider(height: 24, color: AppTheme.divider),
-          _FeatureRow(
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _BubbleCard(
             icon: Icons.tune_rounded,
-            label: 'Smart Filtering',
-            description: 'Auto-adjust preferences with AI',
+            label: 'Smart\nFiltering',
+            description: 'AI-adjusted preferences',
+            color: AppTheme.accentBlue,
             animDelay: 1750.ms,
           ),
-          Divider(height: 24, color: AppTheme.divider),
-          _FeatureRow(
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _BubbleCard(
             icon: Icons.leaderboard_rounded,
-            label: 'TOPSIS Ranking',
-            description: 'Multi-criteria decision analysis',
+            label: 'TOPSIS\nRanking',
+            description: 'Multi-criteria analysis',
+            color: const Color(0xFF7C6AF7),
             animDelay: 1900.ms,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -430,69 +419,86 @@ class _WarmBackgroundState extends State<_WarmBackground>
   }
 }
 
-class _FeatureRow extends StatelessWidget {
+class _BubbleCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String description;
+  final Color color;
   final Duration animDelay;
 
-  const _FeatureRow({
+  const _BubbleCard({
     required this.icon,
     required this.label,
     required this.description,
+    required this.color,
     required this.animDelay,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 38,
-          height: 38,
-          decoration: BoxDecoration(
-            color: AppTheme.accentLight,
-            borderRadius: BorderRadius.circular(11),
-            border: Border.all(color: AppTheme.cardBorder),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
-          child: Icon(icon, size: 19, color: AppTheme.accent),
-        ),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
-                  letterSpacing: -0.1,
-                ),
-              ),
-              const SizedBox(height: 1),
-              Text(
-                description,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ],
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, size: 21, color: color),
           ),
-        ),
-        const Icon(Icons.chevron_right_rounded,
-            size: 16, color: AppTheme.textSecondary),
-      ],
+          const SizedBox(height: 14),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+              height: 1.3,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            description,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondary,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
     )
         .animate()
-        .fadeIn(delay: animDelay, duration: 400.ms)
-        .slideX(
-          begin: 0.06,
+        .fadeIn(delay: animDelay, duration: 500.ms)
+        .blur(
+          begin: const Offset(10, 10),
+          end: Offset.zero,
+          delay: animDelay,
+          duration: 500.ms,
+          curve: Curves.easeOut,
+        )
+        .slideY(
+          begin: 0.15,
           end: 0,
           delay: animDelay,
-          duration: 400.ms,
+          duration: 500.ms,
           curve: Curves.easeOutCubic,
         );
   }

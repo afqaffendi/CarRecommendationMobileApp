@@ -105,7 +105,10 @@ class Car {
     );
   }
 
-  String get displayName => '$brand $model';
+  String get displayName {
+    if (model.toLowerCase().startsWith(brand.toLowerCase())) return model;
+    return '$brand $model';
+  }
 
   String get fuelCategory {
     final e = engine.toLowerCase();
