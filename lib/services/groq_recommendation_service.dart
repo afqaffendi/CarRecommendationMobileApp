@@ -240,9 +240,10 @@ class GroqRecommendationService {
         print('GroqRec: $lastError\nGroq said: $rawText');
       }
 
-      // Final guards: enforce fuel type and budget cap regardless of what Groq picked.
+      // Final guards: enforce fuel type, car type, and budget regardless of what Groq picked.
       final fuelFiltered = _applyStrictFuelFilter(result, preferences.fuelType);
-      return _applyStrictBudgetFilter(fuelFiltered, preferences);
+      final typeFiltered = _applyStrictCarTypeFilter(fuelFiltered, preferences.carType);
+      return _applyStrictBudgetFilter(typeFiltered, preferences);
     } catch (e) {
       lastError = 'API error: $e';
       print('GroqRec: $lastError');
@@ -255,6 +256,14 @@ class GroqRecommendationService {
     if (fuelType == 'any') return cars;
     return cars
         .where((c) => c.fuelCategory.toLowerCase() == fuelType.toLowerCase())
+        .toList();
+  }
+
+  /// Hard car type filter — 'any' passes everything, otherwise requires exact match.
+  List<Car> _applyStrictCarTypeFilter(List<Car> cars, String carType) {
+    if (carType == 'any') return cars;
+    return cars
+        .where((c) => c.type.toLowerCase() == carType.toLowerCase())
         .toList();
   }
 
@@ -343,9 +352,13 @@ class GroqRecommendationService {
         ? 'HARD CAP RM ${prefs.budget.toStringAsFixed(0)} — do not recommend any car above this price'
         : 'No strict budget limit';
 
+    final carTypeLine = prefs.carType == 'any'
+        ? 'any type'
+        : '${prefs.carType.toUpperCase()} ONLY — do not recommend any other body type';
+
     return """${contextSection}FINAL USER PREFERENCES (these override anything in the background context above):
 - Budget: $budgetLine
-- Car Type: ${prefs.carType}
+- Car Type: $carTypeLine
 - Usage: ${prefs.usageType}
 - Fuel Type: ${prefs.fuelType} — only recommend cars of this fuel type
 - Safety priority: ${_safetyLabel(prefs.safetyWeight)}

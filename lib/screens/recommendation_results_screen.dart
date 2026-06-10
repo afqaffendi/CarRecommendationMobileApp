@@ -9,6 +9,7 @@ import '../services/groq_recommendation_service.dart';
 import '../services/topsis_service.dart';
 import '../services/cbf_service.dart';
 import '../services/firestore_service.dart';
+import '../services/search_log_service.dart';
 import '../widgets/animated_title.dart';
 import '../widgets/car_image_widget.dart';
 import '../widgets/glass_card.dart';
@@ -75,6 +76,11 @@ class _RecommendationResultsScreenState
       }
 
       await _runAIRanking(allCars);
+
+      if (_rankedCars.isNotEmpty) {
+        SearchLogService.logTopResults(
+            _rankedCars.map((r) => r.car).toList());
+      }
 
       setState(() => _isLoading = false);
 
@@ -845,14 +851,38 @@ class _RecommendationResultsScreenState
                                 letterSpacing: -0.3,
                               ),
                             ),
-                            const SizedBox(height: 3),
-                            Text(
-                              'RM ${_formatPrice(car.price)}',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.accent,
-                              ),
+                            const SizedBox(height: 5),
+                            Row(
+                              children: [
+                                if (car.variantLabel.isNotEmpty) ...[
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.textPrimary,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      car.variantLabel,
+                                      style: const TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        letterSpacing: 0.3,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                Text(
+                                  'RM ${_formatPrice(car.price)}',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.accent,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -892,8 +922,10 @@ class _RecommendationResultsScreenState
                           '${_numericSafety(car.safetyRating)}/5'),
                       _specChip(
                           Icons.people_rounded, '${car.seats} seats'),
-                      _specChip(Icons.bolt_rounded,
-                          car.fuelCategory.toUpperCase()),
+                      _specChip(Icons.settings_rounded,
+                          car.transmission),
+                      if (car.engine.isNotEmpty)
+                        _specChip(Icons.engineering_rounded, car.engine),
                     ],
                   ),
                 ],

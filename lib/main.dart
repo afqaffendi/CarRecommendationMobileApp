@@ -5,11 +5,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'services/database_service.dart';
 import 'screens/lifestyle_input_screen.dart';
-import 'screens/favorites_screen.dart';
-import 'screens/image_gallery_screen.dart';
+import 'screens/auth/auth_gate.dart';
+import 'screens/profile_screen.dart';
 import 'package:car_recommendation_app/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'theme/app_theme.dart';
 import 'widgets/animated_title.dart';
 import 'widgets/pressable_button.dart';
@@ -29,7 +28,6 @@ void main() async {
   await Hive.initFlutter();
 
   await Future.wait([
-    _signInAnonymously(),
     dotenv.load(fileName: ".env"),
     DatabaseService.initializeAsync(),
   ]);
@@ -39,16 +37,6 @@ void main() async {
   DatabaseService.refreshCarsFromFirestore();
 }
 
-Future<void> _signInAnonymously() async {
-  try {
-    final auth = FirebaseAuth.instance;
-    if (auth.currentUser == null) {
-      await auth.signInAnonymously();
-    }
-  } catch (e) {
-    debugPrint('Anonymous auth failed: $e');
-  }
-}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -58,7 +46,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Car Recommendation',
       theme: AppTheme.theme,
-      home: const HomeScreen(),
+      home: const AuthGate(),
       debugShowCheckedModeBanner: false,
     );
   }
@@ -165,6 +153,27 @@ class _HomeScreenState extends State<HomeScreen> {
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppTheme.accent,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            AppTheme.slideRoute(const ProfileScreen()),
+          ),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: AppTheme.warmSurface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppTheme.cardBorder),
+            ),
+            child: const Icon(
+              Icons.person_rounded,
+              size: 18,
+              color: AppTheme.textPrimary,
             ),
           ),
         ),
@@ -285,32 +294,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _OutlineSecondaryButton(
-                icon: Icons.favorite_rounded,
-                label: 'Favorites',
-                onTap: () => Navigator.push(
-                  context,
-                  AppTheme.slideRoute(const FavoritesScreen()),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _OutlineSecondaryButton(
-                icon: Icons.photo_library_rounded,
-                label: 'Car Gallery',
-                onTap: () => Navigator.push(
-                  context,
-                  AppTheme.slideRoute(const ImageGalleryScreen()),
-                ),
-              ),
-            ),
-          ],
         ),
       ],
     );

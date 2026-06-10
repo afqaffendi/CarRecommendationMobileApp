@@ -124,6 +124,24 @@ class Car {
   // Backward-compatibility getters for existing UI/services.
   String? get variant => null;
 
+  /// Extracts the trim/variant label from the model name.
+  /// e.g. "Saga Premium X" → "Premium X", "Myvi 1.5 AV" → "AV"
+  String get variantLabel {
+    const known = [
+      'Premium X', 'Premium', 'Standard', 'Executive', 'Active', 'Advance',
+      'GR Sport', 'Sport Edition', 'Sport', 'Luxury', 'Plus', 'Pro', 'Max',
+      'Elite', 'AV', 'GX', 'GL', 'GLS', 'SE', 'RS', 'EL', 'AT', 'MT',
+    ];
+    final m = model;
+    for (final v in known) {
+      if (m.toLowerCase().endsWith(v.toLowerCase())) return v;
+    }
+    // Single-letter suffix like "G", "V", "E", "H", "X" after a space
+    final single = RegExp(r' ([A-Z])$').firstMatch(m);
+    if (single != null) return single.group(1)!;
+    return '';
+  }
+
   String get key => '${brand}_$model';
 
   String get usageType {
