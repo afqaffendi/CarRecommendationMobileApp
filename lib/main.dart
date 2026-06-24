@@ -5,7 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'services/database_service.dart';
 import 'screens/lifestyle_input_screen.dart';
-import 'screens/auth/auth_gate.dart';
+import 'screens/splash_screen.dart';
 import 'screens/profile_screen.dart';
 import 'package:car_recommendation_app/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Car Recommendation',
       theme: AppTheme.theme,
-      home: const AuthGate(),
+      home: const SplashScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

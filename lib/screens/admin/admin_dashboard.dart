@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../../screens/profile_screen.dart';
 import '../image_gallery_screen.dart';
 import 'most_searched_screen.dart';
+import '../expert_evaluation_screen.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -199,6 +200,17 @@ class AdminDashboard extends StatelessWidget {
         onTap: () => Navigator.push(
           context,
           AppTheme.slideRoute(const MostSearchedScreen()),
+        ),
+      ),
+      _AdminTile(
+        icon: Icons.science_rounded,
+        label: 'Expert\nEvaluation',
+        description: 'MAE accuracy assessment',
+        color: const Color(0xFF4CAF50),
+        delay: 360.ms,
+        onTap: () => Navigator.push(
+          context,
+          AppTheme.slideRoute(const ExpertEvaluationScreen()),
         ),
       ),
     ];

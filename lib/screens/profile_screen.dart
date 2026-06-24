@@ -8,6 +8,7 @@ import '../models/car.dart';
 import '../theme/app_theme.dart';
 import '../widgets/car_image_widget.dart';
 import 'favorites_screen.dart';
+import 'sus_survey_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -135,6 +136,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           .animate()
                           .fadeIn(delay: 250.ms, duration: 400.ms),
                       const SizedBox(height: 32),
+                      _buildSusSurveyButton()
+                          .animate()
+                          .fadeIn(delay: 280.ms, duration: 400.ms),
+                      const SizedBox(height: 12),
                       _buildSignOutButton()
                           .animate()
                           .fadeIn(delay: 300.ms, duration: 400.ms),
@@ -456,6 +461,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSusSurveyButton() {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        AppTheme.slideRoute(const SusSurveyScreen()),
+      ),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.warmSurface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppTheme.cardBorder),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppTheme.accentLight,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.star_rate_rounded,
+                  size: 20, color: AppTheme.accent),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Rate This App',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Complete the SUS usability survey',
+                    style: TextStyle(
+                        fontSize: 12, color: AppTheme.textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                size: 14, color: AppTheme.textSecondary),
+          ],
         ),
       ),
     );
